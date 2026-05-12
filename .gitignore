@@ -1,0 +1,32 @@
+# Foundry
+out/
+cache/
+broadcast/
+.env
+
+# Dependencies
+lib/
+
+# Coverage
+lcov.info
+coverage/lcov.info
+
+# Node / Frontend
+node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
+# Subgraph
+subgraph/build/
+subgraph/.build/
+subgraph/generated/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
