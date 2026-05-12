@@ -8,6 +8,7 @@ on:
 
 env:
   FOUNDRY_PROFILE: ci
+  FOUNDRY_DISABLE_NIGHTLY_WARNING: "1"
 
 jobs:
   lint:
@@ -35,7 +36,13 @@ jobs:
         run: npm install -g solhint prettier prettier-plugin-solidity
 
       - name: Run solhint
-        run: solhint "contracts/**/*.sol"
+        run: |
+          SOL_FILES=$(find contracts -name "*.sol" 2>/dev/null | head -1)
+          if [ -z "$SOL_FILES" ]; then
+            echo "No Solidity files found — skipping solhint"
+          else
+            solhint "contracts/**/*.sol"
+          fi
 
   build:
     name: Build
@@ -51,7 +58,13 @@ jobs:
           version: nightly
 
       - name: Compile contracts
-        run: forge build --sizes
+        run: |
+          SOL_FILES=$(find contracts -name "*.sol" 2>/dev/null | head -1)
+          if [ -z "$SOL_FILES" ]; then
+            echo "No Solidity files found — skipping build"
+          else
+            forge build --sizes
+          fi
 
   test:
     name: Test
@@ -68,15 +81,28 @@ jobs:
           version: nightly
 
       - name: Run tests
-        run: forge test -vvv
+        run: |
+          SOL_FILES=$(find contracts -name "*.sol" 2>/dev/null | head -1)
+          if [ -z "$SOL_FILES" ]; then
+            echo "No Solidity files found — skipping tests"
+          else
+            forge test -vvv
+          fi
         env:
           ARBITRUM_RPC_URL: ${{ secrets.ARBITRUM_RPC_URL }}
           MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
 
       - name: Run coverage
         run: |
-          forge coverage --report lcov
-          forge coverage --report markdown > coverage/coverage.md
+          SOL_FILES=$(find contracts -name "*.sol" 2>/dev/null | head -1)
+          if [ -z "$SOL_FILES" ]; then
+            echo "No Solidity files found — skipping coverage"
+            echo "# Coverage Report" > coverage/coverage.md
+            echo "No contracts to analyse yet." >> coverage/coverage.md
+          else
+            forge coverage --report lcov
+            forge coverage --report summary | tee coverage/coverage.md
+          fi
         env:
           ARBITRUM_RPC_URL: ${{ secrets.ARBITRUM_RPC_URL }}
 
@@ -101,6 +127,15 @@ jobs:
           version: nightly
 
       - name: Run Slither
+        run: |
+          SOL_FILES=$(find contracts -name "*.sol" 2>/dev/null | head -1)
+          if [ -z "$SOL_FILES" ]; then
+            echo "No Solidity files found — skipping Slither"
+          fi
+        shell: bash
+
+      - name: Run Slither analysis
+        if: ${{ hashFiles('contracts/**/*.sol') != '' }}
         uses: crytic/slither-action@v0.4.1
         with:
           node-version: "20"

@@ -84,7 +84,7 @@ forge test -vvv
 ARBITRUM_RPC_URL=<url> MAINNET_RPC_URL=<url> forge test -vvv
 
 # Coverage
-forge coverage --report markdown > coverage/coverage.md
+forge coverage --report summary | tee coverage/coverage.md
 ```
 
 ### Lint & Format
