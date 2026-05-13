@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {Test, console2} from "forge-std/Test.sol";
-import {AMMMarketplace} from "../../contracts/marketplace/AMMMarketplace.sol";
-import {MockERC20} from "../fuzz/AMMFuzz.t.sol";
+import { Test, console2 } from "forge-std/Test.sol";
+import { AMMMarketplace } from "../../contracts/marketplace/AMMMarketplace.sol";
+import { MockERC20 } from "../fuzz/AMMFuzz.t.sol";
 
 /**
  * @title AMMHandler
@@ -33,7 +33,7 @@ contract AMMHandler is Test {
         tokenA.mint(actor, amountIn);
         vm.startPrank(actor);
         tokenA.approve(address(amm), amountIn);
-        try amm.swap(address(tokenA), amountIn, 0) {} catch {}
+        try amm.swap(address(tokenA), amountIn, 0) { } catch { }
         vm.stopPrank();
     }
 
@@ -46,7 +46,7 @@ contract AMMHandler is Test {
         tokenB.mint(actor, amountIn);
         vm.startPrank(actor);
         tokenB.approve(address(amm), amountIn);
-        try amm.swap(address(tokenB), amountIn, 0) {} catch {}
+        try amm.swap(address(tokenB), amountIn, 0) { } catch { }
         vm.stopPrank();
     }
 
@@ -61,7 +61,7 @@ contract AMMHandler is Test {
         vm.startPrank(actor);
         tokenA.approve(address(amm), amountA);
         tokenB.approve(address(amm), amountB);
-        try amm.addLiquidity(amountA, amountB, 0) {} catch {}
+        try amm.addLiquidity(amountA, amountB, 0) { } catch { }
         vm.stopPrank();
     }
 
@@ -72,7 +72,7 @@ contract AMMHandler is Test {
         lpAmount = bound(lpAmount, 1, balance);
 
         vm.startPrank(actor);
-        try amm.removeLiquidity(lpAmount, 0, 0) {} catch {}
+        try amm.removeLiquidity(lpAmount, 0, 0) { } catch { }
         vm.stopPrank();
     }
 }
@@ -154,6 +154,6 @@ contract AMMInvariantTest is Test {
      *         to address(1) on first deposit and is never redeemable.
      */
     function invariant_TotalSupplyGtMinimumLiquidity() public view {
-        assertGe(amm.totalSupply(), 1_000, "total LP supply fell below MINIMUM_LIQUIDITY");
+        assertGe(amm.totalSupply(), 1000, "total LP supply fell below MINIMUM_LIQUIDITY");
     }
 }

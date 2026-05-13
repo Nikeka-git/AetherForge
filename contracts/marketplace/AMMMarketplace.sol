@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
  * @title AMMMarketplace
@@ -38,7 +38,7 @@ contract AMMMarketplace is ERC20, ReentrancyGuard {
     uint256 public constant FEE_DENOMINATOR = 10_000;
 
     /// @dev Minimum liquidity locked on first deposit to prevent price manipulation.
-    uint256 private constant MINIMUM_LIQUIDITY = 1_000;
+    uint256 private constant MINIMUM_LIQUIDITY = 1000;
 
     // State
 
@@ -75,9 +75,7 @@ contract AMMMarketplace is ERC20, ReentrancyGuard {
      * @param name_   ERC-20 name for the LP token (e.g. "AetherForge AETH-IRON LP").
      * @param symbol_ ERC-20 symbol for the LP token (e.g. "AF-LP").
      */
-    constructor(address _tokenA, address _tokenB, string memory name_, string memory symbol_)
-        ERC20(name_, symbol_)
-    {
+    constructor(address _tokenA, address _tokenB, string memory name_, string memory symbol_) ERC20(name_, symbol_) {
         if (_tokenA == address(0) || _tokenB == address(0)) revert AMM__ZeroAddress();
         if (_tokenA == _tokenB) revert AMM__SameTokens();
         tokenA = IERC20(_tokenA);

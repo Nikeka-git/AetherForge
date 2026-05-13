@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {Test, console2} from "forge-std/Test.sol";
-import {AethToken} from "../../contracts/token/AethToken.sol";
+import { Test, console2 } from "forge-std/Test.sol";
+import { AethToken } from "../../contracts/token/AethToken.sol";
 
 /**
  * @title AethTokenTest
@@ -61,9 +61,7 @@ contract AethTokenTest is Test {
 
     function test_NonMinterCannotMint() public {
         bytes32 role = MINTER_ROLE;
-        vm.expectRevert(
-            abi.encodeWithSignature("AccessControlUnauthorizedAccount(address,bytes32)", alice, role)
-        );
+        vm.expectRevert(abi.encodeWithSignature("AccessControlUnauthorizedAccount(address,bytes32)", alice, role));
         vm.prank(alice);
         token.mint(alice, 1e18);
     }
@@ -125,12 +123,10 @@ contract AethTokenTest is Test {
 
         // Build the permit digest
         bytes32 domainSeparator = token.DOMAIN_SEPARATOR();
-        bytes32 permitTypehash = keccak256(
-            "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
-        );
-        bytes32 structHash = keccak256(
-            abi.encode(permitTypehash, owner, bob, allowanceAmount, token.nonces(owner), deadline)
-        );
+        bytes32 permitTypehash =
+            keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
+        bytes32 structHash =
+            keccak256(abi.encode(permitTypehash, owner, bob, allowanceAmount, token.nonces(owner), deadline));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(ownerKey, digest);
