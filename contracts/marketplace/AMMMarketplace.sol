@@ -102,14 +102,14 @@ contract AMMMarketplace is ERC20, ReentrancyGuard {
     {
         if (amountADesired == 0 || amountBDesired == 0) revert AMM__ZeroAmount();
 
-        uint256 _totalSupply = totalSupply();
+        uint256 supply = totalSupply();
         uint256 _resA = reserveA;
         uint256 _resB = reserveB;
 
         uint256 amountA;
         uint256 amountB;
 
-        if (_totalSupply == 0) {
+        if (supply == 0) {
             // First deposit — set the price ratio, lock MINIMUM_LIQUIDITY permanently.
             amountA = amountADesired;
             amountB = amountBDesired;
@@ -121,6 +121,7 @@ contract AMMMarketplace is ERC20, ReentrancyGuard {
         } else {
             // Subsequent deposits - scale down to maintain the ratio.
             // optimalB = amountADesired * resB / resA
+            // slither-disable-next-line divide-before-multiply
             uint256 amountBOptimal = (amountADesired * _resB) / _resA;
 
             if (amountBOptimal <= amountBDesired) {
@@ -128,14 +129,15 @@ contract AMMMarketplace is ERC20, ReentrancyGuard {
                 amountB = amountBOptimal;
             } else {
                 // amountBDesired is the binding constraint
+                // slither-disable-next-line divide-before-multiply
                 uint256 amountAOptimal = (amountBDesired * _resA) / _resB;
                 amountA = amountAOptimal;
                 amountB = amountBDesired;
             }
 
             // LP proportional to the smaller share contribution
-            uint256 lpA = (amountA * _totalSupply) / _resA;
-            uint256 lpB = (amountB * _totalSupply) / _resB;
+            uint256 lpA = (amountA * supply) / _resA;
+            uint256 lpB = (amountB * supply) / _resB;
             lpMinted = lpA < lpB ? lpA : lpB;
         }
 
@@ -171,12 +173,12 @@ contract AMMMarketplace is ERC20, ReentrancyGuard {
     {
         if (lpAmount == 0) revert AMM__InsufficientLpAmount();
 
-        uint256 _totalSupply = totalSupply();
+        uint256 supply = totalSupply();
         uint256 _resA = reserveA;
         uint256 _resB = reserveB;
 
-        amountA = (lpAmount * _resA) / _totalSupply;
-        amountB = (lpAmount * _resB) / _totalSupply;
+        amountA = (lpAmount * _resA) / supply;
+        amountB = (lpAmount * _resB) / supply;
 
         if (amountA == 0 || amountB == 0) revert AMM__InsufficientLiquidity();
         if (amountA < minA) revert AMM__InsufficientOutputAmount(amountA, minA);
@@ -201,20 +203,20 @@ contract AMMMarketplace is ERC20, ReentrancyGuard {
      * @dev    Fee is deducted from amountIn: effectiveIn = amountIn * (10000 - 30) / 10000.
      *         The k-invariant check at the end acts as a final safety net.
      *
-     * @param _tokenIn    Address of the token being sold (must be tokenA or tokenB).
+     * @param tokenIn    Address of the token being sold (must be tokenA or tokenB).
      * @param amountIn    Exact amount of tokenIn to sell.
      * @param minAmountOut Minimum amount of tokenOut to receive (slippage guard).
      * @return amountOut  Actual amount of tokenOut received.
      */
-    function swap(address _tokenIn, uint256 amountIn, uint256 minAmountOut)
+    function swap(address tokenIn, uint256 amountIn, uint256 minAmountOut)
         external
         nonReentrant
         returns (uint256 amountOut)
     {
         if (amountIn == 0) revert AMM__ZeroAmount();
 
-        bool isAIn = (_tokenIn == address(tokenA));
-        if (!isAIn && _tokenIn != address(tokenB)) revert AMM__InvalidToken(_tokenIn);
+        bool isAIn = (tokenIn == address(tokenA));
+        if (!isAIn && tokenIn != address(tokenB)) revert AMM__InvalidToken(tokenIn);
 
         uint256 _resA = reserveA;
         uint256 _resB = reserveB;
@@ -245,23 +247,23 @@ contract AMMMarketplace is ERC20, ReentrancyGuard {
         }
 
         // Interactions
-        IERC20(_tokenIn).safeTransferFrom(msg.sender, address(this), amountIn);
+        IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn);
         IERC20(isAIn ? address(tokenB) : address(tokenA)).safeTransfer(msg.sender, amountOut);
 
-        emit Swap(msg.sender, _tokenIn, amountIn, isAIn ? address(tokenB) : address(tokenA), amountOut);
+        emit Swap(msg.sender, tokenIn, amountIn, isAIn ? address(tokenB) : address(tokenA), amountOut);
     }
 
     // View helpers
 
     /**
      * @notice Quote how much tokenOut you get for a given amountIn (including fee).
-     * @param _tokenIn Address of the input token.
+     * @param tokenIn Address of the input token.
      * @param amountIn Amount of input token.
      * @return amountOut Expected output (before slippage, purely view).
      */
-    function getAmountOut(address _tokenIn, uint256 amountIn) external view returns (uint256 amountOut) {
-        bool isAIn = (_tokenIn == address(tokenA));
-        if (!isAIn && _tokenIn != address(tokenB)) revert AMM__InvalidToken(_tokenIn);
+    function getAmountOut(address tokenIn, uint256 amountIn) external view returns (uint256 amountOut) {
+        bool isAIn = (tokenIn == address(tokenA));
+        if (!isAIn && tokenIn != address(tokenB)) revert AMM__InvalidToken(tokenIn);
 
         (uint256 resIn, uint256 resOut) = isAIn ? (reserveA, reserveB) : (reserveB, reserveA);
         uint256 amountInWithFee = amountIn * (FEE_DENOMINATOR - FEE_NUMERATOR);

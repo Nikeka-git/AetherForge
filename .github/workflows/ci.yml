@@ -143,6 +143,7 @@ jobs:
         uses: crytic/slither-action@v0.4.1
         with:
           node-version: "20"
+          fail-on: high
           slither-args: >
             --exclude-dependencies
             --filter-paths "contracts/security/ReentrancyVuln.sol,contracts/security/AccessVuln.sol"
