@@ -23,7 +23,7 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+
 
       - name: Check formatting (forge fmt)
         run: forge fmt --check
@@ -57,7 +57,7 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+
 
       - name: Compile contracts
         run: |
@@ -81,7 +81,7 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+
 
       - name: Run tests
         run: |
@@ -128,7 +128,7 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+
 
       - name: Run Slither
         run: |
