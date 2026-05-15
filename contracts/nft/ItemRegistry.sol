@@ -21,29 +21,29 @@ import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol"
  * BURNER_ROLE        — CraftingEngine: burn items when used as recipe ingredients
  */
 contract ItemRegistry is ERC1155, ERC1155Supply, AccessControl {
-    // ─── Constants ────────────────────────────────────────────────────────────
+    // Constants
 
-    uint256 public constant RESOURCE_ID_MAX = 9_999;
+    uint256 public constant RESOURCE_ID_MAX = 9999;
     uint256 public constant EQUIPMENT_ID_MIN = 10_000;
     uint256 public constant EQUIPMENT_ID_MAX = 19_999;
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
 
-    // ─── Errors ───────────────────────────────────────────────────────────────
+    // Errors
 
     error ItemRegistry__ZeroAddress();
     error ItemRegistry__ZeroAmount();
     error ItemRegistry__InvalidItemId(uint256 id);
     error ItemRegistry__LengthMismatch();
 
-    // ─── Events ───────────────────────────────────────────────────────────────
+    // Events
 
     event ResourceMinted(address indexed to, uint256 indexed id, uint256 amount);
     event EquipmentMinted(address indexed to, uint256 indexed id, uint256 amount);
     event ItemBurned(address indexed from, uint256 indexed id, uint256 amount);
 
-    // ─── Constructor ──────────────────────────────────────────────────────────
+    // Constructor
 
     /**
      * @param admin  Address that receives DEFAULT_ADMIN_ROLE.
@@ -54,7 +54,7 @@ contract ItemRegistry is ERC1155, ERC1155Supply, AccessControl {
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
     }
 
-    // ─── Minting ──────────────────────────────────────────────────────────────
+    // Minting
 
     /**
      * @notice Mint fungible resource tokens (IDs 1–9 999).
@@ -89,10 +89,7 @@ contract ItemRegistry is ERC1155, ERC1155Supply, AccessControl {
      * @notice Mint a batch of items in one transaction.
      * @dev    Caller must ensure all IDs are within valid ranges.
      */
-    function mintBatch(address to, uint256[] calldata ids, uint256[] calldata amounts)
-        external
-        onlyRole(MINTER_ROLE)
-    {
+    function mintBatch(address to, uint256[] calldata ids, uint256[] calldata amounts) external onlyRole(MINTER_ROLE) {
         if (to == address(0)) revert ItemRegistry__ZeroAddress();
         if (ids.length != amounts.length) revert ItemRegistry__LengthMismatch();
         for (uint256 i = 0; i < ids.length; i++) {
@@ -117,7 +114,7 @@ contract ItemRegistry is ERC1155, ERC1155Supply, AccessControl {
         emit ItemBurned(from, id, amount);
     }
 
-    // ─── View helpers ─────────────────────────────────────────────────────────
+    // View helpers
 
     function isResource(uint256 id) public pure returns (bool) {
         return id >= 1 && id <= RESOURCE_ID_MAX;
@@ -127,7 +124,7 @@ contract ItemRegistry is ERC1155, ERC1155Supply, AccessControl {
         return id >= EQUIPMENT_ID_MIN && id <= EQUIPMENT_ID_MAX;
     }
 
-    // ─── OZ overrides ─────────────────────────────────────────────────────────
+    // OZ overrides
 
     function _update(address from, address to, uint256[] memory ids, uint256[] memory values)
         internal
