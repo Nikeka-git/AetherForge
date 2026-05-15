@@ -122,18 +122,14 @@ contract HeroNFTFactory is AccessControl {
      * @notice Predict the CREATE2 proxy address for a given salt without deploying.
      * @dev    Uses the same initcode hash that deployCreate2 would produce.
      */
-    function predictCreate2Address(
-        bytes32 salt,
-        address proxyAdmin,
-        address upgrader,
-        string calldata baseURI
-    )
+    function predictCreate2Address(bytes32 salt, address proxyAdmin, address upgrader, string calldata baseURI)
         external
         view
         returns (address predicted)
     {
         bytes memory initData = abi.encodeCall(HeroNFT.initialize, (proxyAdmin, upgrader, baseURI));
-        bytes memory creationCode = abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(implementation, initData));
+        bytes memory creationCode =
+            abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(implementation, initData));
         bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, keccak256(creationCode)));
         predicted = address(uint160(uint256(hash)));
     }
