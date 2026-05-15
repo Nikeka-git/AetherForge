@@ -21,34 +21,34 @@ import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
  *
  * ERC-4626 invariants enforced
  * ────────────────────────────
- * • convertToShares / convertToAssets are monotone and round correctly
+ *   convertToShares / convertToAssets are monotone and round correctly
  *   (shares round DOWN on deposit/mint, assets round DOWN on withdraw/redeem).
- * • No share inflation attack: a _decimalsOffset() of 3 means virtual shares
+ *   No share inflation attack: a _decimalsOffset() of 3 means virtual shares
  *   start at 1000:1, making donation attacks ~1000× more expensive.
  *
  * Roles
  * ─────
- * DEFAULT_ADMIN_ROLE  — grant / revoke roles (transferred to NVTimelock)
- * YIELD_MANAGER_ROLE  — can call injectYield() to add rewards to the vault
+ * DEFAULT_ADMIN_ROLE  - grant / revoke roles (transferred to NVTimelock)
+ * YIELD_MANAGER_ROLE  - can call injectYield() to add rewards to the vault
  */
 contract GuildTreasury is ERC4626, AccessControl {
     using Math for uint256;
 
-    // ─── Roles ────────────────────────────────────────────────────────────────
+    // Roles
 
     bytes32 public constant YIELD_MANAGER_ROLE = keccak256("YIELD_MANAGER_ROLE");
 
-    // ─── Errors ───────────────────────────────────────────────────────────────
+    // Errors
 
     error GuildTreasury__ZeroAddress();
     error GuildTreasury__ZeroAmount();
     error GuildTreasury__InsufficientShares();
 
-    // ─── Events ───────────────────────────────────────────────────────────────
+    // Events
 
     event YieldInjected(address indexed from, uint256 amount);
 
-    // ─── Constructor ──────────────────────────────────────────────────────────
+    // Constructor
 
     /**
      * @param asset_  The underlying token (AethToken / AETH).
@@ -59,7 +59,7 @@ contract GuildTreasury is ERC4626, AccessControl {
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
     }
 
-    // ─── Yield injection ──────────────────────────────────────────────────────
+    // Yield injection
 
     /**
      * @notice Inject `amount` AETH as yield into the vault without minting shares.
@@ -76,21 +76,19 @@ contract GuildTreasury is ERC4626, AccessControl {
         emit YieldInjected(msg.sender, amount);
     }
 
-    // ─── ERC-4626 inflation-attack mitigation ─────────────────────────────────
+    // ERC-4626 inflation-attack mitigation
 
     /**
      * @dev Offset of 3 decimals means the virtual share count starts at 1000.
      *      An attacker trying to inflate the share price via a donation would need
      *      to donate 1000× the first depositor's amount to profit — effectively
      *      making the attack economically unviable for any realistic deposit size.
-     *
-     *      See OZ ERC-4626 docs: https://docs.openzeppelin.com/contracts/5.x/erc4626
      */
     function _decimalsOffset() internal pure override returns (uint8) {
         return 3;
     }
 
-    // ─── OZ overrides ─────────────────────────────────────────────────────────
+    // OZ overrides
 
     function supportsInterface(bytes4 interfaceId) public view override(AccessControl) returns (bool) {
         return super.supportsInterface(interfaceId);

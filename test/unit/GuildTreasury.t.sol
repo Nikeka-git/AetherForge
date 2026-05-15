@@ -12,24 +12,24 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  *         Run with: forge test --match-contract GuildTreasuryTest -vv
  */
 contract GuildTreasuryTest is Test {
-    // ─── Roles ─────────────────────────────────────────────────────────────────
+    // Roles
 
     bytes32 constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 constant YIELD_MANAGER_ROLE = keccak256("YIELD_MANAGER_ROLE");
 
-    // ─── Actors ────────────────────────────────────────────────────────────────
+    // Actors
 
     address admin = makeAddr("admin");
     address yieldManager = makeAddr("yieldManager");
     address alice = makeAddr("alice");
     address bob = makeAddr("bob");
 
-    // ─── System under test ─────────────────────────────────────────────────────
+    // System under test
 
     AethToken aeth;
     GuildTreasury vault;
 
-    // ─── Setup ─────────────────────────────────────────────────────────────────
+    // Setup
 
     function setUp() public {
         vm.startPrank(admin);
@@ -51,7 +51,7 @@ contract GuildTreasuryTest is Test {
         aeth.mint(yieldManager, 50_000 * 1e18);
     }
 
-    // ─── Test 1: Vault metadata ─────────────────────────────────────────────────
+    // Test 1: Vault metadata
 
     function test_VaultMetadata() public view {
         assertEq(vault.name(), "Guild Treasury Share", "name wrong");
@@ -60,7 +60,7 @@ contract GuildTreasuryTest is Test {
         assertEq(vault.decimals(), aeth.decimals() + 3, "decimals offset wrong");
     }
 
-    // ─── Test 2: Deposit mints shares ──────────────────────────────────────────
+    // Test 2: Deposit mints shares
 
     function test_DepositMintsShares() public {
         uint256 depositAmount = 1000 * 1e18;
@@ -75,7 +75,7 @@ contract GuildTreasuryTest is Test {
         assertEq(vault.totalAssets(), depositAmount, "totalAssets wrong");
     }
 
-    // ─── Test 3: Redeem returns assets ─────────────────────────────────────────
+    // Test 3: Redeem returns assets
 
     function test_RedeemReturnsAssets() public {
         uint256 depositAmount = 1000 * 1e18;
@@ -94,7 +94,7 @@ contract GuildTreasuryTest is Test {
         assertEq(vault.balanceOf(alice), 0, "alice should have no shares left");
     }
 
-    // ─── Test 4: Yield injection raises share price ─────────────────────────────
+    // Test 4: Yield injection raises share price
 
     function test_YieldInjectionRaisesSharePrice() public {
         uint256 depositAmount = 1000 * 1e18;
@@ -120,7 +120,7 @@ contract GuildTreasuryTest is Test {
         assertGt(aliceAssets, depositAmount, "share price should have increased");
     }
 
-    // ─── Test 5: Two depositors get proportional shares ────────────────────────
+    // Test 5: Two depositors get proportional shares
 
     function test_TwoDepositorsGetProportionalShares() public {
         uint256 aliceDeposit = 1000 * 1e18;
@@ -140,7 +140,7 @@ contract GuildTreasuryTest is Test {
         assertApproxEqAbs(bobShares, aliceShares * 3, 1e15, "bob shares should be 3x alice");
     }
 
-    // ─── Test 6: Non-yield-manager cannot inject yield ─────────────────────────
+    // Test 6: Non-yield-manager cannot inject yield
 
     function test_NonYieldManagerCannotInjectYield() public {
         vm.prank(admin);
@@ -153,7 +153,7 @@ contract GuildTreasuryTest is Test {
         vm.stopPrank();
     }
 
-    // ─── Test 7: previewDeposit matches actual shares minted ───────────────────
+    // Test 7: previewDeposit matches actual shares minted
 
     function test_PreviewDepositMatchesActual() public {
         uint256 depositAmount = 2500 * 1e18;
@@ -168,7 +168,7 @@ contract GuildTreasuryTest is Test {
         assertEq(preview, actual, "previewDeposit must match actual shares");
     }
 
-    // ─── Test 8: maxWithdraw equals deposited amount (no yield) ────────────────
+    // Test 8: maxWithdraw equals deposited amount (no yield)
 
     function test_MaxWithdrawEqualsDepositedAmount() public {
         uint256 depositAmount = 500 * 1e18;
