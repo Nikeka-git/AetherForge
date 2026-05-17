@@ -14,7 +14,7 @@ import { Initializable } from "@openzeppelin-upgradeable/contracts/proxy/utils/I
  *
  * Upgrade path
  * ────────────
- * V1 → V2: deploy new implementation, call upgradeToAndCall() through the Timelock
+ * V1 -> V2: deploy new implementation, call upgradeToAndCall() through the Timelock
  * proposal. The UPGRADER_ROLE (held by the Timelock) is the only account authorised
  * to trigger an upgrade, preventing unilateral admin upgrades.
  *
@@ -33,12 +33,12 @@ import { Initializable } from "@openzeppelin-upgradeable/contracts/proxy/utils/I
  * Slot 10 (this)           _baseTokenURI
  */
 contract HeroNFT is Initializable, ERC721Upgradeable, AccessControlUpgradeable, UUPSUpgradeable {
-    // ─── Roles ────────────────────────────────────────────────────────────────
+    // Roles
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
 
-    // ─── Storage (V1) ─────────────────────────────────────────────────────────
+    // Storage (V1)
 
     /// @dev Hero classes: 0=Warrior, 1=Mage, 2=Rogue, 3=Paladin
     enum HeroClass {
@@ -57,25 +57,25 @@ contract HeroNFT is Initializable, ERC721Upgradeable, AccessControlUpgradeable, 
     mapping(uint256 => HeroAttributes) private _heroAttributes;
     string private _baseTokenURI;
 
-    // ─── Errors ───────────────────────────────────────────────────────────────
+    // Errors
 
     error HeroNFT__ZeroAddress();
     error HeroNFT__TokenNotFound(uint256 tokenId);
     error HeroNFT__MaxLevelReached(uint256 tokenId);
 
-    // ─── Events ───────────────────────────────────────────────────────────────
+    // Events
 
     event HeroMinted(address indexed to, uint256 indexed tokenId, HeroClass heroClass);
     event HeroLevelUp(uint256 indexed tokenId, uint8 newLevel);
 
-    // ─── Constructor (disabled for proxy) ─────────────────────────────────────
+    // Constructor (disabled for proxy)
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
 
-    // ─── Initializer (replaces constructor for proxies) ───────────────────────
+    // Initializer (replaces constructor for proxies)
 
     /**
      * @param admin    Receives DEFAULT_ADMIN_ROLE (should be deployer, then transferred to Timelock).
@@ -96,7 +96,7 @@ contract HeroNFT is Initializable, ERC721Upgradeable, AccessControlUpgradeable, 
         _nextTokenId = 1; // start from 1, 0 is reserved as "null"
     }
 
-    // ─── Minting ──────────────────────────────────────────────────────────────
+    // Minting
 
     /**
      * @notice Mint a new hero NFT.
@@ -114,7 +114,7 @@ contract HeroNFT is Initializable, ERC721Upgradeable, AccessControlUpgradeable, 
         emit HeroMinted(to, tokenId, heroClass);
     }
 
-    // ─── Hero mechanics ───────────────────────────────────────────────────────
+    // Hero mechanics
 
     /**
      * @notice Level up a hero by 1. Max level is 100.
@@ -130,7 +130,7 @@ contract HeroNFT is Initializable, ERC721Upgradeable, AccessControlUpgradeable, 
         emit HeroLevelUp(tokenId, attrs.level);
     }
 
-    // ─── View helpers ─────────────────────────────────────────────────────────
+    // View helpers
 
     function getHeroAttributes(uint256 tokenId) external view returns (HeroAttributes memory) {
         if (_ownerOf(tokenId) == address(0)) revert HeroNFT__TokenNotFound(tokenId);
@@ -141,7 +141,7 @@ contract HeroNFT is Initializable, ERC721Upgradeable, AccessControlUpgradeable, 
         return _nextTokenId - 1;
     }
 
-    // ─── OZ overrides ─────────────────────────────────────────────────────────
+    // OZ overrides
 
     function _baseURI() internal view override returns (string memory) {
         return _baseTokenURI;

@@ -11,9 +11,9 @@ import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol"
  *
  * Why two deploy methods?
  * ───────────────────────
- * CREATE  (deployCreate)  — address depends on factory address + nonce.
+ * CREATE  (deployCreate)  - address depends on factory address + nonce.
  *                           Use when you don't need to predict the address beforehand.
- * CREATE2 (deployCreate2) — address depends on factory address + salt + initcode hash.
+ * CREATE2 (deployCreate2) - address depends on factory address + salt + initcode hash.
  *                           Use when the frontend or another contract needs to know
  *                           the hero collection address before it's deployed
  *                           (e.g. whitelisting in the AMM or CraftingEngine).
@@ -25,11 +25,11 @@ import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol"
  * The implementation is deployed once; proxies are cheap to spin up.
  */
 contract HeroNFTFactory is AccessControl {
-    // ─── Roles ────────────────────────────────────────────────────────────────
+    // Roles
 
     bytes32 public constant DEPLOYER_ROLE = keccak256("DEPLOYER_ROLE");
 
-    // ─── State ────────────────────────────────────────────────────────────────
+    // State
 
     /// @notice The shared HeroNFT implementation contract (immutable after construction).
     address public immutable implementation;
@@ -37,17 +37,17 @@ contract HeroNFTFactory is AccessControl {
     /// @notice All proxy addresses deployed by this factory (both CREATE and CREATE2).
     address[] public deployedHeroes;
 
-    // ─── Errors ───────────────────────────────────────────────────────────────
+    // Errors
 
     error HeroNFTFactory__ZeroAddress();
     error HeroNFTFactory__SaltAlreadyUsed(bytes32 salt);
     error HeroNFTFactory__DeployFailed();
 
-    // ─── Events ───────────────────────────────────────────────────────────────
+    // Events
 
     event HeroCollectionDeployed(address indexed proxy, address indexed admin, bool isCreate2, bytes32 salt);
 
-    // ─── Constructor ──────────────────────────────────────────────────────────
+    // Constructor
 
     /**
      * @param admin Receives DEFAULT_ADMIN_ROLE and DEPLOYER_ROLE.
@@ -63,7 +63,7 @@ contract HeroNFTFactory is AccessControl {
         _grantRole(DEPLOYER_ROLE, admin);
     }
 
-    // ─── CREATE deployment ────────────────────────────────────────────────────
+    // CREATE deployment
 
     /**
      * @notice Deploy a new HeroNFT proxy using CREATE (address = keccak(factory, nonce)).
@@ -81,14 +81,14 @@ contract HeroNFTFactory is AccessControl {
 
         bytes memory initData = abi.encodeCall(HeroNFT.initialize, (proxyAdmin, upgrader, baseURI));
 
-        // CREATE — Solidity `new` keyword, address determined by factory nonce
+        // CREATE — Solidity 'new' keyword, address determined by factory nonce
         proxy = address(new ERC1967Proxy(implementation, initData));
 
         deployedHeroes.push(proxy);
         emit HeroCollectionDeployed(proxy, proxyAdmin, false, bytes32(0));
     }
 
-    // ─── CREATE2 deployment ───────────────────────────────────────────────────
+    // CREATE2 deployment
 
     /**
      * @notice Deploy a new HeroNFT proxy using CREATE2 (deterministic address).
@@ -109,14 +109,14 @@ contract HeroNFTFactory is AccessControl {
 
         bytes memory initData = abi.encodeCall(HeroNFT.initialize, (proxyAdmin, upgrader, baseURI));
 
-        // CREATE2 — Solidity `new` with `salt` option; address is deterministic
+        // CREATE2 - Solidity 'new' with 'salt' option; address is deterministic
         proxy = address(new ERC1967Proxy{ salt: salt }(implementation, initData));
 
         deployedHeroes.push(proxy);
         emit HeroCollectionDeployed(proxy, proxyAdmin, true, salt);
     }
 
-    // ─── View helpers ─────────────────────────────────────────────────────────
+    // View helpers
 
     /**
      * @notice Predict the CREATE2 proxy address for a given salt without deploying.

@@ -11,14 +11,14 @@ import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol"
  *
  * Item categories
  * ───────────────
- * IDs 1–9 999        RESOURCE  — fungible crafting materials (Iron, Wood, Mana Crystal…)
- * IDs 10 000–19 999  EQUIPMENT — semi-fungible gear (Sword of Dawn, Dragon Armour…)
+ * IDs 1–9 999        RESOURCE  - fungible crafting materials (Iron, Wood, Mana Crystal…)
+ * IDs 10 000–19 999  EQUIPMENT - semi-fungible gear (Sword of Dawn, Dragon Armour…)
  *
  * Roles
  * ─────
- * DEFAULT_ADMIN_ROLE — grant / revoke roles (transferred to Timelock post-deploy)
- * MINTER_ROLE        — CraftingEngine, GuildTreasury: mint items
- * BURNER_ROLE        — CraftingEngine: burn items when used as recipe ingredients
+ * DEFAULT_ADMIN_ROLE - grant / revoke roles (transferred to Timelock post-deploy)
+ * MINTER_ROLE        - CraftingEngine, GuildTreasury: mint items
+ * BURNER_ROLE        - CraftingEngine: burn items when used as recipe ingredients
  */
 contract ItemRegistry is ERC1155, ERC1155Supply, AccessControl {
     // Constants
