@@ -104,7 +104,7 @@ contract ItemRegistry is ERC1155, ERC1155Supply, AccessControl {
     }
 
     /**
-     * @notice Burn items from an account (called by CraftingEngine during recipes).
+     * @notice Burn a single item from an account (called by CraftingEngine during recipes).
      */
     function burn(address from, uint256 id, uint256 amount) external onlyRole(BURNER_ROLE) {
         if (from == address(0)) revert ItemRegistry__ZeroAddress();
@@ -112,6 +112,21 @@ contract ItemRegistry is ERC1155, ERC1155Supply, AccessControl {
 
         _burn(from, id, amount);
         emit ItemBurned(from, id, amount);
+    }
+
+    /**
+     * @notice Burn multiple items in a single call (batch version used by CraftingEngine).
+     * @dev    Using _burnBatch avoids N external calls inside a loop in CraftingEngine,
+     *         eliminating the Slither calls-loop Medium finding while keeping gas lower.
+     */
+    function burnBatch(address from, uint256[] calldata ids, uint256[] calldata amounts)
+        external
+        onlyRole(BURNER_ROLE)
+    {
+        if (from == address(0)) revert ItemRegistry__ZeroAddress();
+        if (ids.length != amounts.length) revert ItemRegistry__LengthMismatch();
+
+        _burnBatch(from, ids, amounts);
     }
 
     // View helpers

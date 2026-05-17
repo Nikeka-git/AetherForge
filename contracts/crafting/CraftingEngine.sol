@@ -196,14 +196,21 @@ contract CraftingEngine is AccessControl, Pausable, ReentrancyGuard {
             revert CraftingEngine__RecipeInactive(recipeId);
         }
 
-        // Verify ingredient balances.
+        // Verify ingredient balances — one batched external call instead of N calls in a loop
+        // (eliminates Slither calls-loop Medium finding).
         uint256 len = recipe.ingredientIds.length;
-        for (uint256 i = 0; i < len; i++) {
-            uint256 itemId = recipe.ingredientIds[i];
-            uint256 required = recipe.ingredientAmts[i];
-            uint256 held = itemRegistry.balanceOf(msg.sender, itemId);
-            if (held < required) {
-                revert CraftingEngine__InsufficientIngredient(itemId, required, held);
+        {
+            address[] memory accs = new address[](len);
+            for (uint256 i = 0; i < len; i++) {
+                accs[i] = msg.sender;
+            }
+            uint256[] memory held = itemRegistry.balanceOfBatch(accs, recipe.ingredientIds);
+            for (uint256 i = 0; i < len; i++) {
+                if (held[i] < recipe.ingredientAmts[i]) {
+                    revert CraftingEngine__InsufficientIngredient(
+                        recipe.ingredientIds[i], recipe.ingredientAmts[i], held[i]
+                    );
+                }
             }
         }
 
@@ -220,10 +227,8 @@ contract CraftingEngine is AccessControl, Pausable, ReentrancyGuard {
 
         // INTERACTIONS
 
-        // 1. Burn ingredients.
-        for (uint256 i = 0; i < len; i++) {
-            itemRegistry.burn(msg.sender, recipe.ingredientIds[i], recipe.ingredientAmts[i]);
-        }
+        // 1. Burn all ingredients in a single batched call (no external calls in a loop).
+        itemRegistry.burnBatch(msg.sender, recipe.ingredientIds, recipe.ingredientAmts);
 
         // 2. Charge AETH: split into treasury fee + burn.
         if (aethCost > 0) {

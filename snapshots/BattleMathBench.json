@@ -1,8 +1,8 @@
 {
-  "battlePower_Solidity": "1897",
-  "battlePower_Yul": "1282",
-  "clampedSub_Solidity": "436",
-  "clampedSub_Yul": "1226",
-  "sqrt_Solidity": "19669",
-  "sqrt_Yul": "3721"
+  "battlePower_Solidity": "117",
+  "battlePower_Yul": "817",
+  "clampedSub_Solidity": "117",
+  "clampedSub_Yul": "817",
+  "sqrt_Solidity": "4657",
+  "sqrt_Yul": "2989"
 }
