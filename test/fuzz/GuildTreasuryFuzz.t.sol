@@ -9,6 +9,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 /**
  * @title GuildTreasuryFuzzTest
  * @notice Fuzz tests for GuildTreasury ERC-4626 vault.
+ * @author Zhandosik22
  *         Run with: forge test --match-contract GuildTreasuryFuzzTest -vv
  *
  * Tests
