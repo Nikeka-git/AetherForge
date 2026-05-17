@@ -107,6 +107,7 @@ jobs:
             forge coverage --ir-minimum --report summary | tee coverage/coverage.md
           fi
         env:
+          FOUNDRY_PROFILE: coverage
           ARBITRUM_RPC_URL: ${{ secrets.ARBITRUM_RPC_URL }}
 
       - name: Upload coverage artifact
