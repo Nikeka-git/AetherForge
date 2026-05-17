@@ -103,8 +103,8 @@ jobs:
             echo "# Coverage Report" > coverage/coverage.md
             echo "No contracts to analyse yet." >> coverage/coverage.md
           else
-            forge coverage --report lcov
-            forge coverage --report summary | tee coverage/coverage.md
+            forge coverage --ir-minimum --report lcov
+            forge coverage --ir-minimum --report summary | tee coverage/coverage.md
           fi
         env:
           ARBITRUM_RPC_URL: ${{ secrets.ARBITRUM_RPC_URL }}
