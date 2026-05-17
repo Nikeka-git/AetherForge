@@ -115,9 +115,7 @@ contract SecurityAccessControlTest is Test {
     function test_Fixed_UnauthorisedMintReverts() public {
         bytes32 minterRole = fixed_.MINTER_ROLE(); // read before prank
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, attacker, minterRole
-            )
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, attacker, minterRole)
         );
         vm.prank(attacker);
         fixed_.mint(attacker, ITEM_ID, 1_000_000);
@@ -166,11 +164,9 @@ contract SecurityAccessControlTest is Test {
      */
     function test_Fixed_AttackerCannotGrantOwnRole() public {
         bytes32 adminRole = fixed_.DEFAULT_ADMIN_ROLE(); // read before prank
-        bytes32 minterRole = fixed_.MINTER_ROLE();       // read before prank
+        bytes32 minterRole = fixed_.MINTER_ROLE(); // read before prank
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, attacker, adminRole
-            )
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, attacker, adminRole)
         );
         vm.prank(attacker);
         fixed_.grantRole(minterRole, attacker);

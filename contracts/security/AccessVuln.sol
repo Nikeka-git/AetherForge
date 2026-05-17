@@ -72,7 +72,7 @@ contract AccessVuln {
     }
 }
 
-// FIXED 
+// FIXED
 
 /**
  * @title AccessFixed
@@ -115,6 +115,7 @@ contract AccessFixed is AccessControl {
     function mint(address to, uint256 itemId, uint256 amount)
         external
         onlyRole(MINTER_ROLE) // access guard
+
     {
         require(to != address(0), "mint to zero address");
         require(amount > 0, "amount must be > 0");

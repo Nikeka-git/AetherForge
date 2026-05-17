@@ -24,7 +24,7 @@ contract AethTokenHandler is Test {
     AethToken public token;
 
     address internal alice = makeAddr("alice_token");
-    address internal bob   = makeAddr("bob_token");
+    address internal bob = makeAddr("bob_token");
     address internal carol = makeAddr("carol_token");
 
     // Running totals tracked by the handler
@@ -129,9 +129,7 @@ contract AethTokenInvariantTest is Test {
     function invariant_TotalSupplyEqualsMintsMinusBurns() public view {
         uint256 expectedSupply = INITIAL_SUPPLY + handler.totalMinted() - handler.totalBurned();
         assertEq(
-            token.totalSupply(),
-            expectedSupply,
-            "AethToken: totalSupply diverged from INITIAL_SUPPLY + minted - burned"
+            token.totalSupply(), expectedSupply, "AethToken: totalSupply diverged from INITIAL_SUPPLY + minted - burned"
         );
     }
 }

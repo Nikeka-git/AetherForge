@@ -67,7 +67,6 @@ contract ReentrancyVuln {
 
 // FIXED
 
-
 /**
  * @title ReentrancyFixed
  * @notice Fixed version of ReentrancyVuln.

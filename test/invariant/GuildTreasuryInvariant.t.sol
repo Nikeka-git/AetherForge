@@ -138,8 +138,8 @@ contract GuildTreasuryInvariantTest is Test {
         // Grant roles needed by the handler and its internal actors
         address yieldBot = makeAddr("yieldBot");
         vm.startPrank(admin);
-        aeth.grantRole(aeth.MINTER_ROLE(), address(handler));         // handler mints for depositors
-        vault.grantRole(vault.YIELD_MANAGER_ROLE(), yieldBot);         // handler's yieldBot injects yield
+        aeth.grantRole(aeth.MINTER_ROLE(), address(handler)); // handler mints for depositors
+        vault.grantRole(vault.YIELD_MANAGER_ROLE(), yieldBot); // handler's yieldBot injects yield
         vm.stopPrank();
 
         // Seed the vault with an initial deposit so share price is meaningful.
@@ -176,11 +176,7 @@ contract GuildTreasuryInvariantTest is Test {
     function invariant_TotalAssetsGeConvertedShares() public view {
         uint256 totalAssets = vault.totalAssets();
         uint256 sharesOwed = vault.convertToAssets(vault.totalSupply());
-        assertGe(
-            totalAssets,
-            sharesOwed,
-            "GuildTreasury: totalAssets < convertToAssets(totalSupply)"
-        );
+        assertGe(totalAssets, sharesOwed, "GuildTreasury: totalAssets < convertToAssets(totalSupply)");
     }
 
     // Invariant 2
@@ -205,10 +201,6 @@ contract GuildTreasuryInvariantTest is Test {
         if (vault.totalSupply() == 0) return;
 
         uint256 currentSharePrice = vault.convertToAssets(ONE_SHARE);
-        assertGe(
-            currentSharePrice,
-            sharePriceFloor,
-            "GuildTreasury: share price decreased below initial floor"
-        );
+        assertGe(currentSharePrice, sharePriceFloor, "GuildTreasury: share price decreased below initial floor");
     }
 }
