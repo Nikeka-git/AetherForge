@@ -80,12 +80,15 @@ library BattleMath {
      *         Identical to the reference implementation in Uniswap V2.
      */
     function sqrtSolidity(uint256 x) internal pure returns (uint256 z) {
-        if (x == 0) return 0;
-        z = x;
-        uint256 y = x / 2 + 1;
-        while (y < z) {
-            z = y;
-            y = (x / y + y) / 2;
+        if (x > 3) {
+            z = x;
+            uint256 y = x / 2 + 1;
+            while (y < z) {
+                z = y;
+                y = (x / y + y) / 2;
+            }
+        } else if (x != 0) {
+            z = 1;
         }
     }
 
@@ -105,18 +108,18 @@ library BattleMath {
      */
     function sqrtYul(uint256 x) internal pure returns (uint256 z) {
         assembly {
-            // Handle x == 0 separately to avoid div-by-zero inside the loop.
             switch iszero(x)
             case 1 { z := 0 }
             default {
-                // Initial guess: z = x, y = x/2 + 1.
-                // The loop converges when y >= z (i.e. no more improvement).
-                z := x
-                let y := add(div(x, 2), 1)
-
-                for { } lt(y, z) { } {
-                    z := y
-                    y := div(add(div(x, y), y), 2)
+                switch gt(x, 3)
+                case 0 { z := 1 }
+                default {
+                    z := x
+                    let y := add(div(x, 2), 1)
+                    for { } lt(y, z) { } {
+                        z := y
+                        y := div(add(div(x, y), y), 2)
+                    }
                 }
             }
         }
