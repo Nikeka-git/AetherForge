@@ -1,0 +1,74 @@
+# Hero — MUTABLE: handleHeroLevelUp делает load() + update level
+type Hero @entity(immutable: false) {
+  id: ID!
+  owner: Bytes!
+  heroClass: Int!
+  level: Int!
+  mintedAt: BigInt!
+  mintTx: Bytes!
+}
+
+# AmmSwap — IMMUTABLE: создаётся один раз на swap, никогда не меняется
+type AmmSwap @entity(immutable: true) {
+  id: ID!
+  user: Bytes!
+  tokenIn: Bytes!
+  amountIn: BigInt!
+  tokenOut: Bytes!
+  amountOut: BigInt!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+}
+
+# CraftEvent — IMMUTABLE: один раз на craft
+type CraftEvent @entity(immutable: true) {
+  id: ID!
+  player: Bytes!
+  recipeId: BigInt!
+  outputItemId: BigInt!
+  outputAmount: BigInt!
+  aethCharged: BigInt!
+  timestamp: BigInt!
+}
+
+# Battle — MUTABLE: статус меняется REGISTERED→MATCHED→RESOLVED/CANCELLED
+type Battle @entity(immutable: false) {
+  id: ID!
+  player1: Bytes!
+  player2: Bytes
+  hero1Id: BigInt!
+  hero2Id: BigInt
+  vrfRequestId: BigInt
+  winner: Bytes
+  reward: BigInt
+  treasuryCut: BigInt
+  status: String!
+  registeredAt: BigInt!
+  resolvedAt: BigInt
+}
+
+# RentalListing — MUTABLE: статус меняется LISTED→RENTED→RETURNED/CANCELLED
+type RentalListing @entity(immutable: false) {
+  id: ID!
+  lender: Bytes!
+  nftContract: Bytes!
+  tokenId: BigInt!
+  amount: BigInt!
+  assetType: Int!
+  pricePerDay: BigInt!
+  minDuration: BigInt!
+  maxDuration: BigInt!
+  status: String!
+  borrower: Bytes
+  rentalEndTime: BigInt
+  listedAt: BigInt!
+}
+
+# TreasuryDeposit — IMMUTABLE: один раз на YieldInjected
+type TreasuryDeposit @entity(immutable: true) {
+  id: ID!
+  from: Bytes!
+  amount: BigInt!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+}

@@ -1,0 +1,139 @@
+# AetherForge Arena — Documented GraphQL Queries
+# ─────────────────────────────────────────────────────────────────────────────
+# Spec §3.1 (Indexing) requires at least 5 documented GraphQL queries.
+# All queries target the Arbitrum Sepolia subgraph deployed to The Graph Studio.
+#
+# Endpoint: https://api.studio.thegraph.com/query/<id>/aetherforge-arena/version/latest
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+# ── Query 1 ──────────────────────────────────────────────────────────────────
+# Purpose : Load a player's hero roster with levels.
+# Used by : Profile / Inventory page of the frontend.
+# Notes   : Filter by owner address (lowercase, checksum not required by Graph).
+
+query HerosByOwner($owner: Bytes!) {
+  heros(
+    where: { owner: $owner }
+    orderBy: mintedAt
+    orderDirection: desc
+  ) {
+    id
+    heroClass
+    level
+    mintedAt
+    mintTx
+  }
+}
+
+# Example variables:
+# { "owner": "0xabc...123" }
+
+
+# ── Query 2 ──────────────────────────────────────────────────────────────────
+# Purpose : Fetch recent AMM swap history for the trading page.
+# Used by : AMM Marketplace page — "Recent Trades" table.
+# Notes   : Returns the 20 most recent swaps across any pair.
+
+query RecentSwaps {
+  ammSwaps(
+    first: 20
+    orderBy: timestamp
+    orderDirection: desc
+  ) {
+    id
+    user
+    tokenIn
+    amountIn
+    tokenOut
+    amountOut
+    timestamp
+    blockNumber
+  }
+}
+
+
+# ── Query 3 ──────────────────────────────────────────────────────────────────
+# Purpose : Show a player's personal crafting history.
+# Used by : Crafting page — "My Crafts" section.
+# Notes   : Filter by player address; paginate with first/skip.
+
+query CraftingHistoryByPlayer($player: Bytes!, $first: Int!, $skip: Int!) {
+  craftEvents(
+    where: { player: $player }
+    first: $first
+    skip:  $skip
+    orderBy: timestamp
+    orderDirection: desc
+  ) {
+    id
+    recipeId
+    outputItemId
+    outputAmount
+    aethCharged
+    timestamp
+  }
+}
+
+# Example variables:
+# { "player": "0xabc...123", "first": 10, "skip": 0 }
+
+
+# ── Query 4 ──────────────────────────────────────────────────────────────────
+# Purpose : Fetch all battles that are currently active (REGISTERED or MATCHED).
+# Used by : Arena page — "Live Battles" feed.
+# Notes   : in filter on status covers both pre-resolution states.
+
+query ActiveBattles {
+  battles(
+    where: { status_in: ["REGISTERED", "MATCHED"] }
+    orderBy: registeredAt
+    orderDirection: desc
+    first: 50
+  ) {
+    id
+    player1
+    player2
+    hero1Id
+    hero2Id
+    status
+    vrfRequestId
+    registeredAt
+  }
+}
+
+
+# ── Query 5 ──────────────────────────────────────────────────────────────────
+# Purpose : Show all NFTs currently available for rent on MercenaryGuild.
+# Used by : Rental marketplace page — "Available Listings" grid.
+# Notes   : Only surfaces LISTED status; RENTED/RETURNED/CANCELLED are excluded.
+#           Frontend can further filter by nftContract to show only HeroNFT.
+
+query AvailableRentals($nftContract: Bytes) {
+  rentalListings(
+    where: {
+      status: "LISTED"
+      nftContract: $nftContract  # pass null to show all contracts
+    }
+    orderBy: listedAt
+    orderDirection: desc
+    first: 100
+  ) {
+    id
+    lender
+    nftContract
+    tokenId
+    amount
+    assetType
+    pricePerDay
+    minDuration
+    maxDuration
+    listedAt
+  }
+}
+
+# Example variables (all HeroNFT listings):
+# { "nftContract": "0x<heroNftProxyAddress>" }
+#
+# Example variables (all contracts):
+# { "nftContract": null }

@@ -99,7 +99,7 @@ contract Deploy is Script {
     uint256 public constant GUILD_PROTOCOL_FEE_BPS = 250;
 
     /// @dev PvPArena treasury fee: 10 % of prize pool goes to GuildTreasury.
-    uint256 public constant ARENA_TREASURY_FEE_BPS = 1_000;
+    uint256 public constant ARENA_TREASURY_FEE_BPS = 1000;
 
     /// @dev PvPArena entry fee: 10 AETH per battle.
     uint256 public constant ARENA_ENTRY_FEE = 10 ether;
@@ -153,12 +153,8 @@ contract Deploy is Script {
 
         // ── 8. AMMMarketplace (AETH / gAETH) ─────────────────────────────────
         // Pairs AETH governance token against gAETH (GuildTreasury shares).
-        ammMarketplace = new AMMMarketplace(
-            address(aethToken),
-            address(guildTreasury),
-            "AetherForge AETH-gAETH LP",
-            "AF-LP"
-        );
+        ammMarketplace =
+            new AMMMarketplace(address(aethToken), address(guildTreasury), "AetherForge AETH-gAETH LP", "AF-LP");
         console2.log("AMMMarketplace:", address(ammMarketplace));
 
         // ── 9. CraftingEngine ─────────────────────────────────────────────────
@@ -174,12 +170,8 @@ contract Deploy is Script {
 
         // ── 10. MercenaryGuild ────────────────────────────────────────────────
         // Fee recipient = GuildTreasury (rental fees flow into the yield vault).
-        mercenaryGuild = new MercenaryGuild(
-            address(aethToken),
-            deployer,
-            address(guildTreasury),
-            GUILD_PROTOCOL_FEE_BPS
-        );
+        mercenaryGuild =
+            new MercenaryGuild(address(aethToken), deployer, address(guildTreasury), GUILD_PROTOCOL_FEE_BPS);
         console2.log("MercenaryGuild:", address(mercenaryGuild));
 
         // ── 11. GameParametersV1 (UUPS proxy) ─────────────────────────────────
@@ -226,7 +218,6 @@ contract Deploy is Script {
      *      empty proposals array and panics when called outside governance.
      */
     function _deployGovernanceAtomic(address deployer) internal {
-
         // Step 1: Deploy AetherTimelock with deployer as temp PROPOSER and
         //         temp DEFAULT_ADMIN (setupAdmin) so the script can grantRole.
         timelock = new AetherTimelock(deployer, deployer);
@@ -312,7 +303,7 @@ contract Deploy is Script {
         heroNFT.revokeRole(heroNFT.DEFAULT_ADMIN_ROLE(), deployer);
         craftingEngine.revokeRole(craftingEngine.DEFAULT_ADMIN_ROLE(), deployer);
         mercenaryGuild.revokeRole(mercenaryGuild.DEFAULT_ADMIN_ROLE(), deployer);
-        pvpArena.revokeRole(pvpArena.PAUSER_ROLE(), deployer);   // revoke before DEFAULT_ADMIN
+        pvpArena.revokeRole(pvpArena.PAUSER_ROLE(), deployer); // revoke before DEFAULT_ADMIN
         pvpArena.revokeRole(pvpArena.DEFAULT_ADMIN_ROLE(), deployer);
     }
 }

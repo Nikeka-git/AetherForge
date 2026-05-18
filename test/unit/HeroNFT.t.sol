@@ -187,7 +187,7 @@ contract HeroNFTTest is Test {
     // ─── Test 13: supportsInterface for ERC721 and AccessControl ────────────────
 
     function test_SupportsInterface() public view {
-        assertTrue(hero.supportsInterface(0x80ac58cd), "should support ERC721");   // ERC721
+        assertTrue(hero.supportsInterface(0x80ac58cd), "should support ERC721"); // ERC721
         assertTrue(hero.supportsInterface(0x7965db0b), "should support AccessControl"); // IAccessControl
     }
 }

@@ -1,0 +1,157 @@
+specVersion: 0.0.5
+description: AetherForge Arena — on-chain GameFi protocol (Arbitrum Sepolia)
+repository: https://github.com/Nikeka-git/AetherForge
+
+schema:
+  file: ./schema.graphql
+
+# Data sources
+
+dataSources:
+
+  # 1. HeroNFT
+  - kind: ethereum/contract
+    name: HeroNFT
+    network: arbitrum-sepolia
+    source:
+      # Address of the ERC-1967 proxy deployed by HeroNFTFactory
+      address: "0x2c40df51d53cb9ff32f031d0840d2b8d8c0b7252"
+      abi: HeroNFT
+      startBlock: 269219208
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Hero
+      abis:
+        - name: HeroNFT
+          file: ./abis/HeroNFT.json
+      eventHandlers:
+        - event: HeroMinted(indexed address,indexed uint256,uint8)
+          handler: handleHeroMinted
+        - event: HeroLevelUp(indexed uint256,uint8)
+          handler: handleHeroLevelUp
+      file: ./src/mappings.ts
+
+  # 2. AMMMarketplace
+  - kind: ethereum/contract
+    name: AMMMarketplace
+    network: arbitrum-sepolia
+    source:
+      address: "0x8451f2f5e7bb375764358ec2cbfd15385ff3549f"
+      abi: AMMMarketplace
+      startBlock: 269219195
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - AmmSwap
+      abis:
+        - name: AMMMarketplace
+          file: ./abis/AMMMarketplace.json
+      eventHandlers:
+        - event: Swap(indexed address,address,uint256,address,uint256)
+          handler: handleSwap
+      file: ./src/mappings.ts
+
+  # 3. CraftingEngine 
+  - kind: ethereum/contract
+    name: CraftingEngine
+    network: arbitrum-sepolia
+    source:
+      address: "0x18f8ff91674a71c79ae7bc6f3f59d039c307a02a"
+      abi: CraftingEngine
+      startBlock: 269219198
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - CraftEvent
+      abis:
+        - name: CraftingEngine
+          file: ./abis/CraftingEngine.json
+      eventHandlers:
+        - event: ItemCrafted(indexed address,indexed uint256,indexed uint256,uint256,uint256)
+          handler: handleItemCrafted
+      file: ./src/mappings.ts
+
+  # 4. PvPArena 
+  - kind: ethereum/contract
+    name: PvPArena
+    network: arbitrum-sepolia
+    source:
+      address: "0x7d508b563f8c8a2d70bca4fa7967f1b9dcd785b4"
+      abi: PvPArena
+      startBlock: 269219212
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Battle
+      abis:
+        - name: PvPArena
+          file: ./abis/PvPArena.json
+      eventHandlers:
+        - event: Registered(indexed uint256,indexed address,indexed uint256)
+          handler: handleRegistered
+        - event: Matched(indexed uint256,address,address,uint256)
+          handler: handleMatched
+        - event: Resolved(indexed uint256,indexed address,uint256,uint256)
+          handler: handleResolved
+        - event: Cancelled(indexed uint256,indexed address)
+          handler: handleCancelled
+      file: ./src/mappings.ts
+
+  # 5. MercenaryGuild
+  - kind: ethereum/contract
+    name: MercenaryGuild
+    network: arbitrum-sepolia
+    source:
+      address: "0x55318d07f1ad22f21334d6f41b22503273fd4fc1"
+      abi: MercenaryGuild
+      startBlock: 269219201
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - RentalListing
+      abis:
+        - name: MercenaryGuild
+          file: ./abis/MercenaryGuild.json
+      eventHandlers:
+        - event: Listed(indexed uint256,indexed address,address,uint256,uint256,uint8,uint256,uint256,uint256)
+          handler: handleListed
+        - event: Rented(indexed uint256,indexed uint256,indexed address,uint256,uint256,uint256)
+          handler: handleRented
+        - event: Returned(indexed uint256,indexed uint256,address)
+          handler: handleReturned
+        - event: ListingCancelled(indexed uint256,indexed address)
+          handler: handleListingCancelled
+      file: ./src/mappings.ts
+
+  # 6. GuildTreasury 
+  - kind: ethereum/contract
+    name: GuildTreasury
+    network: arbitrum-sepolia
+    source:
+      address: "0x117abc28a926df44746d36e56a04a4332aa25c3b"
+      abi: GuildTreasury
+      startBlock: 269219176
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - TreasuryDeposit
+      abis:
+        - name: GuildTreasury
+          file: ./abis/GuildTreasury.json
+      eventHandlers:
+        - event: YieldInjected(indexed address,uint256)
+          handler: handleYieldInjected
+      file: ./src/mappings.ts
