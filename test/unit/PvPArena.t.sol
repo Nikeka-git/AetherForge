@@ -78,10 +78,13 @@ contract PvPArenaTest is Test {
         // Deploy AETH token.
         aeth = new AethToken(admin);
 
-        // Deploy HeroNFT behind UUPS proxy.
+        // Deploy HeroNFT behind UUPS proxy — pass aethToken so mintHero can mint starter pack.
         HeroNFT impl = new HeroNFT();
-        bytes memory initData = abi.encodeCall(HeroNFT.initialize, (admin, admin, "https://hero/"));
+        bytes memory initData = abi.encodeCall(HeroNFT.initialize, (admin, admin, "https://hero/", address(aeth)));
         heroNFT = HeroNFT(address(new ERC1967Proxy(address(impl), initData)));
+
+        // Grant HeroNFT MINTER_ROLE on AethToken so mintHero can mint starter AETH.
+        aeth.grantRole(aeth.MINTER_ROLE(), address(heroNFT));
 
         // Deploy mock VRF coordinator.
         coordinator = new MockVRFCoordinator();
@@ -100,10 +103,13 @@ contract PvPArenaTest is Test {
             TREASURY_BPS
         );
 
-        // Grant arena MINTER_ROLE on HeroNFT so it can mint heroes for tests.
+        // Grant arena MINTER_ROLE on HeroNFT so it can level up heroes.
         heroNFT.grantRole(heroNFT.MINTER_ROLE(), address(arena));
         // Also grant admin the minter role so setUp can mint test heroes.
         heroNFT.grantRole(heroNFT.MINTER_ROLE(), admin);
+
+        // Mint initial AETH supply to admin for distribution.
+        aeth.mint(admin, 10_000 ether);
 
         // Fund players and give allowance to arena.
         uint256 playerFunds = 100 ether;

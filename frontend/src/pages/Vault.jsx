@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAccount, useReadContracts, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { parseEther, formatEther } from 'viem'
 import { ADDRESSES, AETH_ABI, TREASURY_ABI } from '../lib/contracts.js'
@@ -26,7 +26,7 @@ export default function Vault() {
   const { writeContract, data: txHash, isPending } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash: txHash })
 
-  if (isSuccess) { refetch(); }
+  useEffect(() => { if (isSuccess) refetch() }, [isSuccess])
 
   const needsApproval = tab === 'deposit' && amount && allowance !== undefined &&
     allowance < parseEther(amount || '0')

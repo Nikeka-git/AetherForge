@@ -1,23 +1,22 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAccount, useReadContracts, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { parseEther, formatEther } from 'viem'
-import { ADDRESSES, AETH_ABI, AMM_ABI, RESOURCES } from '../lib/contracts.js'
+import { ADDRESSES, AETH_ABI, TREASURY_ABI, AMM_ABI } from '../lib/contracts.js'
 import { parseContractError } from '../lib/wagmi.js'
 
 export default function Marketplace() {
   const { address, isConnected } = useAccount()
-  const [selectedItem, setSelectedItem] = useState(RESOURCES[0].id)
   const [direction, setDirection] = useState(true) // true = AETH→Item
   const [amountIn, setAmountIn] = useState('')
   const [minOut, setMinOut] = useState('')
   const [txError, setTxError] = useState(null)
 
-  const resource = RESOURCES.find(r => r.id === selectedItem)
-
   const { data, refetch } = useReadContracts({
     contracts: [
       { address: ADDRESSES.AethToken,    abi: AETH_ABI, functionName: 'balanceOf', args: [address] },
-      { address: ADDRESSES.AethToken,    abi: AETH_ABI, functionName: 'allowance', args: [address, ADDRESSES.AMMMarketplace] },
+      { address: direction ? ADDRESSES.AethToken : ADDRESSES.GuildTreasury,
+        abi: direction ? AETH_ABI : TREASURY_ABI,
+        functionName: 'allowance', args: [address, ADDRESSES.AMMMarketplace] },
       { address: ADDRESSES.AMMMarketplace, abi: AMM_ABI, functionName: 'getReserves' },
     ],
     query: { enabled: isConnected && !!address },
@@ -29,9 +28,9 @@ export default function Marketplace() {
 
   const { writeContract, data: txHash, isPending } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash: txHash })
-  if (isSuccess) refetch()
+  useEffect(() => { if (isSuccess) refetch() }, [isSuccess])
 
-  const needsApproval = direction && amountIn && allowance !== undefined &&
+  const needsApproval = amountIn && allowance !== undefined &&
     allowance < parseEther(amountIn || '0')
 
   async function handleSwap() {
@@ -40,14 +39,15 @@ export default function Marketplace() {
       const parsed = parseEther(amountIn)
       const minParsed = minOut ? parseEther(minOut) : 0n
 
+      const tokenIn = direction ? ADDRESSES.AethToken : ADDRESSES.GuildTreasury
       if (needsApproval) {
-        writeContract({ address: ADDRESSES.AethToken, abi: AETH_ABI, functionName: 'approve', args: [ADDRESSES.AMMMarketplace, parsed] })
+        writeContract({ address: tokenIn, abi: direction ? AETH_ABI : TREASURY_ABI, functionName: 'approve', args: [ADDRESSES.AMMMarketplace, parsed] })
       } else {
         writeContract({
           address: ADDRESSES.AMMMarketplace,
           abi: AMM_ABI,
           functionName: 'swap',
-          args: [direction, parsed, minParsed],
+          args: [tokenIn, parsed, minParsed],
         })
       }
     } catch (e) {
@@ -63,16 +63,16 @@ export default function Marketplace() {
         ⚖ Resource Marketplace
       </h1>
       <p style={{ color: 'var(--muted)', marginBottom: 32, fontSize: '0.88rem' }}>
-        Swap AETH for in-game resources using the constant-product AMM.
+        Swap AETH ↔ gAETH (vault shares) using the constant-product AMM.
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 32 }}>
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '20px 24px' }}>
-          <div style={{ fontSize: '0.72rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>Reserve AETH</div>
+          <div style={{ fontSize: '0.72rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>Reserve AETH (tokenA)</div>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', color: 'var(--amber)' }}>{fmt(reserveA)}</div>
         </div>
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '20px 24px' }}>
-          <div style={{ fontSize: '0.72rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>Reserve Items</div>
+          <div style={{ fontSize: '0.72rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>Reserve gAETH (tokenB)</div>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', color: 'var(--amber)' }}>{fmt(reserveB)}</div>
         </div>
       </div>
@@ -88,7 +88,7 @@ export default function Marketplace() {
               borderRadius: 8, color: direction === d ? 'var(--amber)' : 'var(--muted)',
               fontFamily: 'var(--font-display)', fontSize: '0.82rem', cursor: 'pointer',
             }}>
-              {d ? 'AETH → Item' : 'Item → AETH'}
+              {d ? 'AETH → gAETH' : 'gAETH → AETH'}
             </button>
           ))}
         </div>
@@ -106,7 +106,7 @@ export default function Marketplace() {
             }}
           />
           <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: 4 }}>
-            AETH balance: {fmt(aethBal)}
+            {direction ? 'AETH' : 'gAETH'} balance: {fmt(aethBal)}
           </div>
         </div>
 

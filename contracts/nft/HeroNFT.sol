@@ -5,6 +5,7 @@ import { ERC721Upgradeable } from "@openzeppelin-upgradeable/contracts/token/ERC
 import { AccessControlUpgradeable } from "@openzeppelin-upgradeable/contracts/access/AccessControlUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import { Initializable } from "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
+import { AethToken } from "../token/AethToken.sol";
 
 /**
  * @title HeroNFT
@@ -31,12 +32,16 @@ import { Initializable } from "@openzeppelin-upgradeable/contracts/proxy/utils/I
  * Slot 8  (this)           _nextTokenId
  * Slot 9  (this)           _heroAttributes
  * Slot 10 (this)           _baseTokenURI
+ * Slot 11 (this)           _aethToken
  */
 contract HeroNFT is Initializable, ERC721Upgradeable, AccessControlUpgradeable, UUPSUpgradeable {
     // Roles
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
+
+    /// @notice AETH awarded to every new hero owner on mint.
+    uint256 public constant STARTER_AETH = 100 ether;
 
     // Storage (V1)
 
@@ -56,6 +61,7 @@ contract HeroNFT is Initializable, ERC721Upgradeable, AccessControlUpgradeable, 
     uint256 private _nextTokenId;
     mapping(uint256 => HeroAttributes) private _heroAttributes;
     string private _baseTokenURI;
+    AethToken private _aethToken;
 
     // Errors
 
@@ -78,12 +84,18 @@ contract HeroNFT is Initializable, ERC721Upgradeable, AccessControlUpgradeable, 
     // Initializer (replaces constructor for proxies)
 
     /**
-     * @param admin    Receives DEFAULT_ADMIN_ROLE (should be deployer, then transferred to Timelock).
-     * @param upgrader Receives UPGRADER_ROLE (should be the Timelock from day 1).
-     * @param baseURI  Base URI for token metadata.
+     * @param admin      Receives DEFAULT_ADMIN_ROLE (transfer to Timelock post-deploy).
+     * @param upgrader   Receives UPGRADER_ROLE (should be the Timelock from day 1).
+     * @param baseURI    Base URI for token metadata.
+     * @param aethToken_ AethToken address — minted to every new hero owner.
      */
-    function initialize(address admin, address upgrader, string memory baseURI) external initializer {
-        if (admin == address(0) || upgrader == address(0)) revert HeroNFT__ZeroAddress();
+    function initialize(address admin, address upgrader, string memory baseURI, address aethToken_)
+        external
+        initializer
+    {
+        if (admin == address(0) || upgrader == address(0) || aethToken_ == address(0)) {
+            revert HeroNFT__ZeroAddress();
+        }
 
         __ERC721_init("AetherForge Hero", "HERO");
         __AccessControl_init();
@@ -93,23 +105,29 @@ contract HeroNFT is Initializable, ERC721Upgradeable, AccessControlUpgradeable, 
         _grantRole(UPGRADER_ROLE, upgrader);
 
         _baseTokenURI = baseURI;
+        _aethToken = AethToken(aethToken_);
         _nextTokenId = 1; // start from 1, 0 is reserved as "null"
     }
 
     // Minting
 
     /**
-     * @notice Mint a new hero NFT.
+     * @notice Mint a new hero NFT. Open to any caller — no role required.
+     * @dev    Anyone can create a hero; privileged actions (levelUp) remain
+     *         gated by MINTER_ROLE so only the arena can modify hero stats.
      * @param to        Recipient address.
-     * @param heroClass Class of the hero (0=Warrior … 3=Paladin).
+     * @param heroClass Class of the hero (0=Warrior ... 3=Paladin).
      * @return tokenId  The minted token ID.
      */
-    function mintHero(address to, HeroClass heroClass) external onlyRole(MINTER_ROLE) returns (uint256 tokenId) {
+    function mintHero(address to, HeroClass heroClass) external returns (uint256 tokenId) {
         if (to == address(0)) revert HeroNFT__ZeroAddress();
 
         tokenId = _nextTokenId++;
         _heroAttributes[tokenId] = HeroAttributes({ level: 1, heroClass: heroClass });
         _safeMint(to, tokenId);
+
+        // Starter pack: mint STARTER_AETH to the new hero owner.
+        _aethToken.mint(to, STARTER_AETH);
 
         emit HeroMinted(to, tokenId, heroClass);
     }

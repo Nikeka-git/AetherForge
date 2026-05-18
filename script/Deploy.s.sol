@@ -147,7 +147,7 @@ contract Deploy is Script {
 
         // Deploy primary hero collection via factory using CREATE.
         // Deployer is both admin and upgrader initially; upgrader transferred to Timelock later.
-        address heroNFTProxy = heroNFTFactory.deployCreate(deployer, deployer, heroBaseURI);
+        address heroNFTProxy = heroNFTFactory.deployCreate(deployer, deployer, heroBaseURI, address(aethToken));
         heroNFT = HeroNFT(heroNFTProxy);
         console2.log("HeroNFT proxy:", address(heroNFT));
 
@@ -239,10 +239,12 @@ contract Deploy is Script {
 
         // ── 14. Role grants and ownership wiring ─────────────────────────────
 
-        // AethToken: grant MINTER_ROLE to GuildTreasury and CraftingEngine.
+        // AethToken: grant MINTER_ROLE to GuildTreasury, CraftingEngine, and HeroNFT.
+        //            HeroNFT needs it to mint the starter AETH pack on mintHero().
         //            grant BURNER_ROLE to CraftingEngine.
         aethToken.grantRole(aethToken.MINTER_ROLE(), address(guildTreasury));
         aethToken.grantRole(aethToken.MINTER_ROLE(), address(craftingEngine));
+        aethToken.grantRole(aethToken.MINTER_ROLE(), address(heroNFT));
         aethToken.grantRole(aethToken.BURNER_ROLE(), address(craftingEngine));
 
         // ItemRegistry: grant MINTER_ROLE + BURNER_ROLE to CraftingEngine.

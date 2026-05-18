@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { formatEther } from 'viem'
 import { ADDRESSES, AETH_ABI, GOVERNOR_ABI, GOVERNOR_STATES } from '../lib/contracts.js'
@@ -38,7 +38,7 @@ function ProposalCard({ proposalId, userAddress, isConnected }) {
 
   const { writeContract, data: txHash, isPending } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash: txHash })
-  if (isSuccess) refetchVoted()
+  useEffect(() => { if (isSuccess) refetchVoted() }, [isSuccess])
 
   const stateInfo = stateData !== undefined ? GOVERNOR_STATES[stateData] : null
   const [against, forVotes, abstain] = votesData ?? [0n, 0n, 0n]

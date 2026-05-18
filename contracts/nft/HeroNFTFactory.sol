@@ -72,14 +72,16 @@ contract HeroNFTFactory is AccessControl {
      * @param baseURI     Token metadata base URI.
      * @return proxy      Address of the newly deployed ERC1967Proxy.
      */
-    function deployCreate(address proxyAdmin, address upgrader, string calldata baseURI)
+    function deployCreate(address proxyAdmin, address upgrader, string calldata baseURI, address aethToken)
         external
         onlyRole(DEPLOYER_ROLE)
         returns (address proxy)
     {
-        if (proxyAdmin == address(0) || upgrader == address(0)) revert HeroNFTFactory__ZeroAddress();
+        if (proxyAdmin == address(0) || upgrader == address(0) || aethToken == address(0)) {
+            revert HeroNFTFactory__ZeroAddress();
+        }
 
-        bytes memory initData = abi.encodeCall(HeroNFT.initialize, (proxyAdmin, upgrader, baseURI));
+        bytes memory initData = abi.encodeCall(HeroNFT.initialize, (proxyAdmin, upgrader, baseURI, aethToken));
 
         // CREATE — Solidity 'new' keyword, address determined by factory nonce
         proxy = address(new ERC1967Proxy(implementation, initData));
@@ -100,14 +102,16 @@ contract HeroNFTFactory is AccessControl {
      * @param baseURI     Token metadata base URI.
      * @return proxy      Address of the newly deployed ERC1967Proxy.
      */
-    function deployCreate2(bytes32 salt, address proxyAdmin, address upgrader, string calldata baseURI)
+    function deployCreate2(bytes32 salt, address proxyAdmin, address upgrader, string calldata baseURI, address aethToken)
         external
         onlyRole(DEPLOYER_ROLE)
         returns (address proxy)
     {
-        if (proxyAdmin == address(0) || upgrader == address(0)) revert HeroNFTFactory__ZeroAddress();
+        if (proxyAdmin == address(0) || upgrader == address(0) || aethToken == address(0)) {
+            revert HeroNFTFactory__ZeroAddress();
+        }
 
-        bytes memory initData = abi.encodeCall(HeroNFT.initialize, (proxyAdmin, upgrader, baseURI));
+        bytes memory initData = abi.encodeCall(HeroNFT.initialize, (proxyAdmin, upgrader, baseURI, aethToken));
 
         // CREATE2 - Solidity 'new' with 'salt' option; address is deterministic
         proxy = address(new ERC1967Proxy{ salt: salt }(implementation, initData));
@@ -122,12 +126,12 @@ contract HeroNFTFactory is AccessControl {
      * @notice Predict the CREATE2 proxy address for a given salt without deploying.
      * @dev    Uses the same initcode hash that deployCreate2 would produce.
      */
-    function predictCreate2Address(bytes32 salt, address proxyAdmin, address upgrader, string calldata baseURI)
+    function predictCreate2Address(bytes32 salt, address proxyAdmin, address upgrader, string calldata baseURI, address aethToken)
         external
         view
         returns (address predicted)
     {
-        bytes memory initData = abi.encodeCall(HeroNFT.initialize, (proxyAdmin, upgrader, baseURI));
+        bytes memory initData = abi.encodeCall(HeroNFT.initialize, (proxyAdmin, upgrader, baseURI, aethToken));
         bytes memory creationCode =
             abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(implementation, initData));
         bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, keccak256(creationCode)));

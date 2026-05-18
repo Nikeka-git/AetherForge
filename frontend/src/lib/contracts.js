@@ -1,15 +1,15 @@
 // ─── Deployed contract addresses (Arbitrum Sepolia, chainId 421614) ───────────
 
 export const ADDRESSES = {
-  AethToken:      '0x7aa8834926c783f69c5cad7fcd008a140176c34d',
-  GuildTreasury:  '0x117abc28a926df44746d36e56a04a4332aa25c3b',
-  AMMMarketplace: '0x8451f2f5e7bb375764358ec2cbfd15385ff3549f',
-  CraftingEngine: '0x18f8ff91674a71c79ae7bc6f3f59d039c307a02a',
-  MercenaryGuild: '0x55318d07f1ad22f21334d6f41b22503273fd4fc1',
-  HeroNFT:        '0x2c40df51d53cb9ff32f031d0840d2b8d8c0b7252',
-  PvPArena:       '0x7d508b563f8c8a2d70bca4fa7967f1b9dcd785b4',
-  AetherGovernor: '0x8a7ef55437aeebd6e2b9dde1bfbc143e90d50e80',
-  AetherTimelock: '0x3e31dc90cf05410f062788a9cd9128172f529a18',
+  AethToken:      '0x05cd03555f9b070ef5157cd596ac0d1b921e9122',
+  GuildTreasury:  '0x5ed48f7cfbd815194e1c1da41c9b3a374bd5a26d',
+  AMMMarketplace: '0xbdb3eb8c39e0f58de1ce8890fe5965bb21e407bf',
+  CraftingEngine: '0x1312959b19eea8d1eaf15326ac1595d68de5db51',
+  MercenaryGuild: '0x77ded34f2d48438b79555d346820ccb1efe80756',
+  HeroNFT:        '0x7323fa4f5c60ed45a08f7b68bc99e1ad731c23d7',
+  PvPArena:       '0xf0ea2405965ed381742ecd0a4288b8162f429ebd',
+  AetherGovernor: '0x01f85400901dd98e1d48056740b7fe66cfd691cc',
+  AetherTimelock: '0x5321f62960cead392d248a4249d2e4a5f30dbcc3',
 }
 
 // ─── Minimal ABIs ─────────────────────────────────────────────────────────────
@@ -63,29 +63,54 @@ export const TREASURY_ABI = [
 ]
 
 export const AMM_ABI = [
-  { name: 'pools', type: 'function', stateMutability: 'view',
-    inputs: [{ name: 'itemId', type: 'uint256' }],
+  // ── View ──────────────────────────────────────────────────────────────────
+  { name: 'getReserves', type: 'function', stateMutability: 'view',
+    inputs: [],
     outputs: [
-      { name: 'reserveAeth', type: 'uint256' },
-      { name: 'reserveItem', type: 'uint256' },
-      { name: 'totalLPSupply', type: 'uint256' },
-      { name: 'lpToken', type: 'address' },
+      { name: '_reserveA', type: 'uint256' },
+      { name: '_reserveB', type: 'uint256' },
     ] },
+  { name: 'getAmountOut', type: 'function', stateMutability: 'view',
+    inputs: [
+      { name: 'tokenIn', type: 'address' },
+      { name: 'amountIn', type: 'uint256' },
+    ],
+    outputs: [{ name: 'amountOut', type: 'uint256' }] },
+  { name: 'tokenA', type: 'function', stateMutability: 'view',
+    inputs: [], outputs: [{ type: 'address' }] },
+  { name: 'tokenB', type: 'function', stateMutability: 'view',
+    inputs: [], outputs: [{ type: 'address' }] },
+  { name: 'balanceOf', type: 'function', stateMutability: 'view',
+    inputs: [{ name: 'account', type: 'address' }],
+    outputs: [{ type: 'uint256' }] },
+  // ── Write ─────────────────────────────────────────────────────────────────
   { name: 'swap', type: 'function', stateMutability: 'nonpayable',
     inputs: [
-      { name: 'itemId', type: 'uint256' },
-      { name: 'aethToItem', type: 'bool' },
+      { name: 'tokenIn', type: 'address' },
       { name: 'amountIn', type: 'uint256' },
       { name: 'minAmountOut', type: 'uint256' },
     ],
     outputs: [{ name: 'amountOut', type: 'uint256' }] },
   { name: 'addLiquidity', type: 'function', stateMutability: 'nonpayable',
     inputs: [
-      { name: 'itemId', type: 'uint256' },
-      { name: 'aethAmount', type: 'uint256' },
-      { name: 'itemAmount', type: 'uint256' },
+      { name: 'amountADesired', type: 'uint256' },
+      { name: 'amountBDesired', type: 'uint256' },
+      { name: 'minLpOut', type: 'uint256' },
     ],
-    outputs: [{ type: 'uint256' }] },
+    outputs: [{ name: 'lpMinted', type: 'uint256' }] },
+  { name: 'removeLiquidity', type: 'function', stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'lpAmount', type: 'uint256' },
+      { name: 'minA', type: 'uint256' },
+      { name: 'minB', type: 'uint256' },
+    ],
+    outputs: [
+      { name: 'amountA', type: 'uint256' },
+      { name: 'amountB', type: 'uint256' },
+    ] },
+  { name: 'approve', type: 'function', stateMutability: 'nonpayable',
+    inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }],
+    outputs: [{ type: 'bool' }] },
 ]
 
 export const CRAFTING_ABI = [
@@ -101,6 +126,7 @@ export const CRAFTING_ABI = [
 ]
 
 export const HERO_ABI = [
+  // ── View ──────────────────────────────────────────────────────────────────
   { name: 'balanceOf', type: 'function', stateMutability: 'view',
     inputs: [{ name: 'owner', type: 'address' }],
     outputs: [{ type: 'uint256' }] },
@@ -119,6 +145,21 @@ export const HERO_ABI = [
       { name: 'equippedWeapon', type: 'uint256' },
       { name: 'equippedArmor', type: 'uint256' },
     ] },
+  // ── Access control (needed for minting UI) ────────────────────────────────
+  { name: 'hasRole', type: 'function', stateMutability: 'view',
+    inputs: [
+      { name: 'role', type: 'bytes32' },
+      { name: 'account', type: 'address' },
+    ],
+    outputs: [{ type: 'bool' }] },
+  // ── Write ─────────────────────────────────────────────────────────────────
+  // mintHero(address to, uint8 heroClass) — requires MINTER_ROLE
+  { name: 'mintHero', type: 'function', stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'to', type: 'address' },
+      { name: 'heroClass', type: 'uint8' },
+    ],
+    outputs: [{ name: 'tokenId', type: 'uint256' }] },
 ]
 
 export const ARENA_ABI = [
@@ -185,9 +226,10 @@ export const GOVERNOR_ABI = [
 
 // ─── Game constants ───────────────────────────────────────────────────────────
 
-export const HERO_CLASSES = ['Warrior', 'Mage', 'Rogue', 'Ranger', 'Paladin']
+// NOTE: must match HeroNFT.sol enum HeroClass { Warrior=0, Mage=1, Rogue=2, Paladin=3 }
+export const HERO_CLASSES = ['Warrior', 'Mage', 'Rogue', 'Paladin']
 
-export const HERO_CLASS_ICONS = ['⚔️', '🔮', '🗡️', '🏹', '🛡️']
+export const HERO_CLASS_ICONS = ['⚔️', '🔮', '🗡️', '🛡️']
 
 export const RESOURCES = [
   { id: 1, name: 'Iron Ore',     icon: '🪨' },
@@ -243,12 +285,12 @@ export const RECIPES = [
 ]
 
 export const GOVERNOR_STATES = [
-  { label: 'Pending',  cls: 'badge-pending'  },
-  { label: 'Active',   cls: 'badge-active'   },
-  { label: 'Canceled', cls: 'badge-canceled' },
-  { label: 'Defeated', cls: 'badge-defeated' },
-  { label: 'Succeeded',cls: 'badge-succeeded'},
-  { label: 'Queued',   cls: 'badge-queued'   },
-  { label: 'Expired',  cls: 'badge-expired'  },
-  { label: 'Executed', cls: 'badge-executed' },
+  { label: 'Pending',   cls: 'badge-pending'   },
+  { label: 'Active',    cls: 'badge-active'    },
+  { label: 'Canceled',  cls: 'badge-canceled'  },
+  { label: 'Defeated',  cls: 'badge-defeated'  },
+  { label: 'Succeeded', cls: 'badge-succeeded' },
+  { label: 'Queued',    cls: 'badge-queued'    },
+  { label: 'Expired',   cls: 'badge-expired'   },
+  { label: 'Executed',  cls: 'badge-executed'  },
 ]
