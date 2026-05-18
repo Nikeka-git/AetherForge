@@ -1,11 +1,11 @@
 {
-  "name": "aetherforge-subgraph",
+  "name": "aether-forge",
   "version": "1.0.0",
   "scripts": {
     "codegen": "graph codegen",
     "test": "graph test",
     "build": "graph build",
-    "deploy": "graph deploy --node https://api.studio.thegraph.com/deploy/ aetherforge-arena",
+    "deploy": "graph deploy --node https://api.studio.thegraph.com/deploy/ aether-forge",
     "create-local": "graph create --node http://localhost:8020/ aetherforge-arena",
     "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 aetherforge-arena"
   },
