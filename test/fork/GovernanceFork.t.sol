@@ -62,7 +62,7 @@ contract GovernanceForkTest is Test {
         token = new AethToken(admin);
 
         vm.prank(admin);
-        timelock = new AetherTimelock(admin);
+        timelock = new AetherTimelock(admin, admin);
 
         vm.prank(admin);
         governor = new AetherGovernor(token, timelock);

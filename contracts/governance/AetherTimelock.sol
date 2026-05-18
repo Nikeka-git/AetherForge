@@ -13,7 +13,7 @@ import { TimelockController } from "@openzeppelin/contracts/governance/TimelockC
  * PROPOSER  -> AetherGovernor (only the Governor can queue proposals).
  * CANCELLER -> AetherGovernor (Governor can cancel queued proposals).
  * EXECUTOR  -> address(0)  (anyone can trigger execution after the delay).
- * ADMIN     -> revoked from deployer in the constructor (no backdoor).
+ * ADMIN     -> setupAdmin during deploy only; must be revoked by deploy script.
  *
  * The Timelock controls the treasury and any protocol parameters that require
  * governance approval. A 2-day delay gives token holders time to react before
@@ -23,15 +23,19 @@ contract AetherTimelock is TimelockController {
     uint256 public constant MIN_DELAY = 2 days;
 
     /**
-     * @param governor Address of the AetherGovernor contract.
-     *                 Receives PROPOSER_ROLE and CANCELLER_ROLE.
+     * @param governor    Address of the AetherGovernor contract.
+     *                    Receives PROPOSER_ROLE and CANCELLER_ROLE.
+     * @param setupAdmin  Temporary admin address for initial role wiring in the
+     *                    deploy script. The deploy script MUST revoke this role
+     *                    (revokeRole(DEFAULT_ADMIN_ROLE, setupAdmin)) after setup.
+     *                    Pass address(0) for a fully self-administered timelock.
      */
-    constructor(address governor)
+    constructor(address governor, address setupAdmin)
         TimelockController(
             MIN_DELAY,
             _toArray(governor), // proposers
             _toArray(address(0)), // executors — open (anyone can execute after delay)
-            address(0) // admin — address(0) means no extra admin; deployer admin is auto-revoked
+            setupAdmin // temporary admin; revoked by deploy script after wiring
         )
     { }
 

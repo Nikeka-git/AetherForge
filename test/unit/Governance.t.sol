@@ -54,7 +54,7 @@ contract GovernanceTest is Test {
 
         // Deploy timelock with admin as temporary proposer
         vm.prank(admin);
-        timelock = new AetherTimelock(admin); // admin as temp proposer
+        timelock = new AetherTimelock(admin, admin); // admin as temp proposer
 
         // Deploy governor
         vm.prank(admin);
@@ -225,5 +225,39 @@ contract GovernanceTest is Test {
         // 7. Execute
         governor.execute(targets, values, calldatas, descriptionHash);
         assertEq(uint8(governor.state(proposalId)), uint8(IGovernor.ProposalState.Executed));
+    }
+
+    // Test 9: proposalNeedsQueuing returns true for a succeeded proposal
+
+    function test_ProposalNeedsQueuing() public {
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        targets[0] = alice;
+
+        vm.prank(proposer);
+        uint256 proposalId = governor.propose(targets, values, calldatas, "queuing check");
+
+        assertTrue(governor.proposalNeedsQueuing(proposalId), "Governor with Timelock must always need queuing");
+    }
+
+    // Test 10: cancel a pending proposal via the governor
+
+    function test_CancelProposal_WhilePending() public {
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        string memory description = "proposal to cancel";
+        bytes32 descriptionHash = keccak256(bytes(description));
+        targets[0] = alice;
+
+        vm.prank(proposer);
+        uint256 proposalId = governor.propose(targets, values, calldatas, description);
+        assertEq(uint8(governor.state(proposalId)), uint8(IGovernor.ProposalState.Pending));
+
+        // Proposer cancels their own proposal before voting starts
+        vm.prank(proposer);
+        governor.cancel(targets, values, calldatas, descriptionHash);
+        assertEq(uint8(governor.state(proposalId)), uint8(IGovernor.ProposalState.Canceled));
     }
 }

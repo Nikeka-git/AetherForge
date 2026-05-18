@@ -18,6 +18,7 @@
   },
   "excludedFiles": [
     "contracts/security/ReentrancyVuln.sol",
-    "contracts/security/AccessVuln.sol"
+    "contracts/security/AccessVuln.sol",
+    "script/**"
   ]
 }

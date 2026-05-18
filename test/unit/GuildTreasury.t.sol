@@ -5,6 +5,7 @@ import { Test } from "forge-std/Test.sol";
 import { GuildTreasury } from "../../contracts/vault/GuildTreasury.sol";
 import { AethToken } from "../../contracts/token/AethToken.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IAccessControl } from "@openzeppelin/contracts/access/IAccessControl.sol";
 
 /**
  * @title GuildTreasuryTest
@@ -180,5 +181,27 @@ contract GuildTreasuryTest is Test {
 
         uint256 maxWithdraw = vault.maxWithdraw(alice);
         assertApproxEqAbs(maxWithdraw, depositAmount, 1, "maxWithdraw should equal deposit (no yield)");
+    }
+
+    // Test 9: constructor reverts on zero admin address
+
+    function test_Constructor_RevertsOnZeroAdmin() public {
+        vm.expectRevert(GuildTreasury.GuildTreasury__ZeroAddress.selector);
+        new GuildTreasury(IERC20(address(aeth)), address(0));
+    }
+
+    // Test 10: injectYield reverts on zero amount
+
+    function test_InjectYield_RevertsOnZeroAmount() public {
+        vm.expectRevert(GuildTreasury.GuildTreasury__ZeroAmount.selector);
+        vm.prank(yieldManager);
+        vault.injectYield(0);
+    }
+
+    // Test 11: supportsInterface returns true for AccessControl interface
+
+    function test_SupportsInterface() public view {
+        // IAccessControl interfaceId = 0x7965db0b
+        assertTrue(vault.supportsInterface(type(IAccessControl).interfaceId));
     }
 }
