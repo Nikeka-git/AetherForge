@@ -5,6 +5,7 @@ import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import { BattleMath } from "../assembly/BattleMath.sol";
 
 /**
  * @title AMMMarketplace
@@ -115,9 +116,8 @@ contract AMMMarketplace is ERC20, ReentrancyGuard {
             amountB = amountBDesired;
 
             // LP minted = sqrt(amountA * amountB) - MINIMUM_LIQUIDITY
-            lpMinted = _sqrt(amountA * amountB) - MINIMUM_LIQUIDITY;
-            // Burn MINIMUM_LIQUIDITY by minting it to address(1) (not address(0), avoids issues)
-            _mint(address(1), MINIMUM_LIQUIDITY);
+            // Uses BattleMath.sqrtYul (inline Yul, benchmarked in docs/gas-report.md).
+            lpMinted = BattleMath.sqrtYul(amountA * amountB) - MINIMUM_LIQUIDITY;
         } else {
             // Subsequent deposits - scale down to maintain the ratio.
             // optimalB = amountADesired * resB / resA
@@ -147,6 +147,8 @@ contract AMMMarketplace is ERC20, ReentrancyGuard {
         // Effects - update reserves before external calls
         reserveA = _resA + amountA;
         reserveB = _resB + amountB;
+        // Lock MINIMUM_LIQUIDITY permanently on first deposit (supply was 0).
+        if (supply == 0) _mint(address(1), MINIMUM_LIQUIDITY);
 
         // Interactions - pull tokens from the caller
         tokenA.safeTransferFrom(msg.sender, address(this), amountA);
@@ -240,11 +242,10 @@ contract AMMMarketplace is ERC20, ReentrancyGuard {
             reserveA = _resA - amountOut;
         }
 
-        // k-invariant safety net: new_k >= old_k (fees make k grow over time)
-        // Use unchecked to avoid gas overhead; the ternary above already validates the direction.
-        unchecked {
-            if (reserveA * reserveB < _resA * _resB) revert AMM__KInvariantViolated();
-        }
+        // k-invariant safety net: new_k >= old_k (fees make k grow over time).
+        // Do NOT use unchecked here: reserve values can be large and overflow would
+        // silently pass a manipulated invariant check.
+        if (reserveA * reserveB < _resA * _resB) revert AMM__KInvariantViolated();
 
         // Interactions
         IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn);
@@ -278,21 +279,5 @@ contract AMMMarketplace is ERC20, ReentrancyGuard {
         _reserveB = reserveB;
     }
 
-    // Internal math
-
-    /**
-     * @dev Babylonian square root (integer). Used only on the first liquidity deposit.
-     */
-    function _sqrt(uint256 y) internal pure returns (uint256 z) {
-        if (y > 3) {
-            z = y;
-            uint256 x = y / 2 + 1;
-            while (x < z) {
-                z = x;
-                x = (y / x + x) / 2;
-            }
-        } else if (y != 0) {
-            z = 1;
-        }
-    }
+    // Internal math — delegated to BattleMath library (see contracts/assembly/BattleMath.sol)
 }

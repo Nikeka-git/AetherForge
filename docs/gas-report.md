@@ -32,11 +32,11 @@ Maximum intermediate value: `65535 × 120 = 7 864 200` — far below `uint256` o
 | Implementation | Gas used | Savings |
 |---|---|---|
 | `sqrtSolidity` (Babylonian) | 891 | baseline |
-| `sqrtYul` (bit-shift Newton) | 642 | **−249 gas (−27.9%)** |
+| `sqrtYul` (Babylonian, no overflow guards) | 642 | **−249 gas (−27.9%)** |
 
-**Why the savings exist:** The Yul version uses a bit-shift initialisation heuristic that reaches a good approximation in fewer iterations than pure Babylonian, and the loop body avoids Solidity's conditional `if` that compiles to JUMPI pairs.
+**Why the savings exist:** Both `sqrtSolidity` and `sqrtYul` implement the same Babylonian (Newton's method) algorithm. The difference is that Solidity 0.8 inserts checked-arithmetic opcodes (`ADD` → `DUP1 GT JUMPI`) around every arithmetic operation inside the loop. The Yul version runs the identical integer-Newton loop without those guards, which is safe because the intermediate values (half of a uint256) can never overflow a uint256. This saves approximately 6 opcodes per loop iteration.
 
-**Production usage:** `AMMMarketplace.addLiquidity` calls `BattleMath.sqrtYul` to compute initial LP shares (`sqrt(aethAmt * itemAmt)`). On every first-liquidity call and proportional subsequent ones.
+**Production usage:** `AMMMarketplace.addLiquidity` calls `BattleMath.sqrtYul` to compute initial LP shares on first deposit (`sqrt(amountA * amountB)`). On every first-liquidity call.
 
 ---
 

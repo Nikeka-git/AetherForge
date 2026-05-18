@@ -177,16 +177,33 @@ contract HeroNFTTest is Test {
     }
 
     // ─── Test 12: levelUp reverts when hero is already at max level ─────────────
+    //
+    // FIX: original looped 99× with vm.prank — caused test suite to hang (~30 s).
+    //
+    // WHY slot 1, not slot 9:
+    //   The comment in HeroNFT.sol lists slots 0-11 assuming OZ v4 sequential layout.
+    //   OZ v5 upgradeable contracts use ERC-7201 *namespaced* storage for every
+    //   parent contract (ERC721, AccessControl, UUPSUpgradeable, Initializable).
+    //   That means none of those occupy sequential slots 0-8.
+    //   HeroNFT's *own* variables therefore start at slot 0:
+    //     slot 0  →  _nextTokenId
+    //     slot 1  →  _heroAttributes   ← correct slot
+    //     slot 2  →  _baseTokenURI
+    //     slot 3  →  _aethToken
+    //
+    // HeroAttributes { uint8 level, HeroClass heroClass } — both uint8, packed.
+    // level sits in the low byte → bytes32(uint256(0x0064)) == level=100, heroClass=0.
 
     function test_LevelUp_RevertsAtMaxLevel() public {
         vm.prank(alice);
         uint256 tokenId = hero.mintHero(alice, HeroNFT.HeroClass.Warrior);
 
-        for (uint256 i = 0; i < 99; i++) {
-            vm.prank(minter);
-            hero.levelUp(tokenId);
-        }
-        assertEq(hero.getHeroAttributes(tokenId).level, 100, "should be at max level");
+        // Write level=100 directly into storage in O(1).
+        // _heroAttributes is at mapping slot 1 (OZ v5 namespaced storage).
+        bytes32 mappingSlot = keccak256(abi.encode(tokenId, uint256(1)));
+        vm.store(address(hero), mappingSlot, bytes32(uint256(0x0064))); // level=100, heroClass=Warrior
+
+        assertEq(hero.getHeroAttributes(tokenId).level, 100, "cheat: level should be 100");
 
         vm.prank(minter);
         vm.expectRevert(abi.encodeWithSelector(HeroNFT.HeroNFT__MaxLevelReached.selector, tokenId));

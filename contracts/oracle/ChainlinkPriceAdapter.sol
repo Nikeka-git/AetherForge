@@ -49,6 +49,8 @@ contract ChainlinkPriceAdapter is AccessControl {
     error ChainlinkPriceAdapter__InvalidPrice(int256 price);
     error ChainlinkPriceAdapter__ZeroAddress();
     error ChainlinkPriceAdapter__ZeroStaleness();
+    /// @notice Emitted when answeredInRound < roundId, meaning the round has not been finalised.
+    error ChainlinkPriceAdapter__IncompleteRound(uint80 roundId, uint80 answeredInRound);
 
     // Events
 
@@ -86,8 +88,13 @@ contract ChainlinkPriceAdapter is AccessControl {
      */
     function latestPrice() external view returns (int256 price, uint8 decimals) {
         // slither-disable-next-line unused-return
-        (, int256 answer,, uint256 updatedAt,) = feed.latestRoundData();
+        (uint80 roundId, int256 answer,, uint256 updatedAt, uint80 answeredInRound) = feed.latestRoundData();
 
+        // answeredInRound < roundId means the round started but was never finalised
+        // (e.g. network congestion or feed migration). Treat as stale.
+        if (answeredInRound < roundId) {
+            revert ChainlinkPriceAdapter__IncompleteRound(roundId, answeredInRound);
+        }
         if (block.timestamp - updatedAt > maxStaleness) {
             revert ChainlinkPriceAdapter__StalePrice(updatedAt, maxStaleness);
         }
@@ -104,8 +111,11 @@ contract ChainlinkPriceAdapter is AccessControl {
      */
     function latestPriceUint() external view returns (uint256 price) {
         // slither-disable-next-line unused-return
-        (, int256 answer,, uint256 updatedAt,) = feed.latestRoundData();
+        (uint80 roundId, int256 answer,, uint256 updatedAt, uint80 answeredInRound) = feed.latestRoundData();
 
+        if (answeredInRound < roundId) {
+            revert ChainlinkPriceAdapter__IncompleteRound(roundId, answeredInRound);
+        }
         if (block.timestamp - updatedAt > maxStaleness) {
             revert ChainlinkPriceAdapter__StalePrice(updatedAt, maxStaleness);
         }

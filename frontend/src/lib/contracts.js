@@ -1,15 +1,15 @@
 // ─── Deployed contract addresses (Arbitrum Sepolia, chainId 421614) ───────────
 
 export const ADDRESSES = {
-  AethToken:      '0x05cd03555f9b070ef5157cd596ac0d1b921e9122',
-  GuildTreasury:  '0x5ed48f7cfbd815194e1c1da41c9b3a374bd5a26d',
-  AMMMarketplace: '0xbdb3eb8c39e0f58de1ce8890fe5965bb21e407bf',
-  CraftingEngine: '0x1312959b19eea8d1eaf15326ac1595d68de5db51',
-  MercenaryGuild: '0x77ded34f2d48438b79555d346820ccb1efe80756',
-  HeroNFT:        '0x7323fa4f5c60ed45a08f7b68bc99e1ad731c23d7',
-  PvPArena:       '0xf0ea2405965ed381742ecd0a4288b8162f429ebd',
-  AetherGovernor: '0x01f85400901dd98e1d48056740b7fe66cfd691cc',
-  AetherTimelock: '0x5321f62960cead392d248a4249d2e4a5f30dbcc3',
+  AethToken:      '0x447e4d33c64b992244ac0495afe6b8a58347c360',
+  GuildTreasury:  '0xcb20697fd237e4eba74175560236a0b350594151',
+  AMMMarketplace: '0x0ecca53c3499e3b428d9edb724bb7c4c474e2419',
+  CraftingEngine: '0x928b72056ab8497cb0fe33834f1299c4c9f28260',
+  MercenaryGuild: '0xc208ade9a9e988f3873cf7a037eb0f0870b586d6',
+  HeroNFT:        '0xf36cc159efdb132b0d1a7a95da8fb43c0e1fa1e4',
+  PvPArena:       '0xd868590dab35096ddb4c665c09ac5e74b5c3a129',
+  AetherGovernor: '0x131ea59599daee4189c9ce50d9ad1df98dfcba47',
+  AetherTimelock: '0xcec73a960b437291992f4101932e7c0e808b5d12',
 }
 
 // ─── Minimal ABIs ─────────────────────────────────────────────────────────────
@@ -114,15 +114,26 @@ export const AMM_ABI = [
 ]
 
 export const CRAFTING_ABI = [
+  // getRecipe returns the full Recipe struct
+  { name: 'getRecipe', type: 'function', stateMutability: 'view',
+    inputs: [{ name: 'recipeId', type: 'uint256' }],
+    outputs: [{
+      name: '', type: 'tuple',
+      components: [
+        { name: 'ingredientIds',  type: 'uint256[]' },
+        { name: 'ingredientAmts', type: 'uint256[]' },
+        { name: 'usdCost',        type: 'uint256'   },
+        { name: 'outputItemId',   type: 'uint256'   },
+        { name: 'outputAmount',   type: 'uint256'   },
+        { name: 'active',         type: 'bool'      },
+      ],
+    }] },
+  // previewAethCost — useful for showing cost in UI before craft
+  { name: 'previewAethCost', type: 'function', stateMutability: 'view',
+    inputs: [{ name: 'recipeId', type: 'uint256' }],
+    outputs: [{ type: 'uint256' }] },
   { name: 'craft', type: 'function', stateMutability: 'nonpayable',
     inputs: [{ name: 'recipeId', type: 'uint256' }], outputs: [] },
-  { name: 'recipes', type: 'function', stateMutability: 'view',
-    inputs: [{ name: 'recipeId', type: 'uint256' }],
-    outputs: [
-      { name: 'aethCost', type: 'uint256' },
-      { name: 'outputItemId', type: 'uint256' },
-      { name: 'outputAmount', type: 'uint256' },
-    ] },
 ]
 
 export const HERO_ABI = [
@@ -130,22 +141,19 @@ export const HERO_ABI = [
   { name: 'balanceOf', type: 'function', stateMutability: 'view',
     inputs: [{ name: 'owner', type: 'address' }],
     outputs: [{ type: 'uint256' }] },
-  { name: 'heroes', type: 'function', stateMutability: 'view',
+  // getHeroAttributes(uint256 tokenId) → { level: uint8, heroClass: uint8 }
+  { name: 'getHeroAttributes', type: 'function', stateMutability: 'view',
     inputs: [{ name: 'tokenId', type: 'uint256' }],
     outputs: [
+      { name: 'level',     type: 'uint8' },
       { name: 'heroClass', type: 'uint8' },
-      { name: 'level', type: 'uint8' },
-      { name: 'attack', type: 'uint16' },
-      { name: 'defense', type: 'uint16' },
-      { name: 'agility', type: 'uint16' },
-      { name: 'luck', type: 'uint16' },
-      { name: 'vitality', type: 'uint16' },
-      { name: 'battleWins', type: 'uint32' },
-      { name: 'battleLosses', type: 'uint32' },
-      { name: 'equippedWeapon', type: 'uint256' },
-      { name: 'equippedArmor', type: 'uint256' },
     ] },
-  // ── Access control (needed for minting UI) ────────────────────────────────
+  { name: 'totalMinted', type: 'function', stateMutability: 'view',
+    inputs: [], outputs: [{ type: 'uint256' }] },
+  { name: 'ownerOf', type: 'function', stateMutability: 'view',
+    inputs: [{ name: 'tokenId', type: 'uint256' }],
+    outputs: [{ type: 'address' }] },
+  // ── Access control ────────────────────────────────────────────────────────
   { name: 'hasRole', type: 'function', stateMutability: 'view',
     inputs: [
       { name: 'role', type: 'bytes32' },
@@ -153,7 +161,7 @@ export const HERO_ABI = [
     ],
     outputs: [{ type: 'bool' }] },
   // ── Write ─────────────────────────────────────────────────────────────────
-  // mintHero(address to, uint8 heroClass) — requires MINTER_ROLE
+  // mintHero(address to, uint8 heroClass) — open to all callers
   { name: 'mintHero', type: 'function', stateMutability: 'nonpayable',
     inputs: [
       { name: 'to', type: 'address' },
@@ -165,13 +173,40 @@ export const HERO_ABI = [
 export const ARENA_ABI = [
   { name: 'entryFee', type: 'function', stateMutability: 'view',
     inputs: [], outputs: [{ type: 'uint256' }] },
+  { name: 'openSlot', type: 'function', stateMutability: 'view',
+    inputs: [], outputs: [{ type: 'uint256' }] },
+  // pendingRewards(uint256 battleId) — NOT address
+  { name: 'pendingRewards', type: 'function', stateMutability: 'view',
+    inputs: [{ name: 'battleId', type: 'uint256' }],
+    outputs: [{ type: 'uint256' }] },
+  { name: 'getBattle', type: 'function', stateMutability: 'view',
+    inputs: [{ name: 'battleId', type: 'uint256' }],
+    outputs: [{
+      name: '', type: 'tuple',
+      components: [
+        { name: 'player1',          type: 'address' },
+        { name: 'player2',          type: 'address' },
+        { name: 'hero1Id',          type: 'uint256' },
+        { name: 'hero2Id',          type: 'uint256' },
+        { name: 'entryFeeSnapshot', type: 'uint256' },
+        { name: 'state',            type: 'uint8'   },
+        { name: 'vrfRequestId',     type: 'uint256' },
+        { name: 'matchedAt',        type: 'uint256' },
+        { name: 'winner',           type: 'address' },
+        { name: 'claimed',          type: 'bool'    },
+      ],
+    }] },
+  { name: 'heroInBattle', type: 'function', stateMutability: 'view',
+    inputs: [{ name: 'heroId', type: 'uint256' }],
+    outputs: [{ type: 'uint256' }] },
   { name: 'register', type: 'function', stateMutability: 'nonpayable',
     inputs: [{ name: 'heroId', type: 'uint256' }], outputs: [] },
   { name: 'claimReward', type: 'function', stateMutability: 'nonpayable',
     inputs: [{ name: 'battleId', type: 'uint256' }], outputs: [] },
-  { name: 'pendingRewards', type: 'function', stateMutability: 'view',
-    inputs: [{ name: 'winner', type: 'address' }],
-    outputs: [{ type: 'uint256' }] },
+  { name: 'cancelRegistration', type: 'function', stateMutability: 'nonpayable',
+    inputs: [{ name: 'battleId', type: 'uint256' }], outputs: [] },
+  { name: 'cancelStuckBattle', type: 'function', stateMutability: 'nonpayable',
+    inputs: [{ name: 'battleId', type: 'uint256' }], outputs: [] },
 ]
 
 export const GOVERNOR_ABI = [
@@ -222,6 +257,15 @@ export const GOVERNOR_ABI = [
       { name: 'description', type: 'string',  indexed: false },
     ],
   },
+  { name: 'propose', type: 'function', stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'targets',     type: 'address[]' },
+      { name: 'values',      type: 'uint256[]' },
+      { name: 'calldatas',   type: 'bytes[]'   },
+      { name: 'description', type: 'string'    },
+    ],
+    outputs: [{ name: 'proposalId', type: 'uint256' }] 
+  },
 ]
 
 // ─── Game constants ───────────────────────────────────────────────────────────
@@ -240,46 +284,46 @@ export const RESOURCES = [
 ]
 
 export const EQUIPMENT = [
-  { id: 100, name: 'Flaming Sword',  icon: '🔥', rarity: 'Rare' },
-  { id: 101, name: 'Frost Staff',    icon: '❄️', rarity: 'Rare' },
-  { id: 102, name: 'Dragon Armor',   icon: '🐲', rarity: 'Epic' },
+  { id: 10_000, name: 'Flaming Sword',  icon: '🔥', rarity: 'Rare' },
+  { id: 10_001, name: 'Frost Staff',    icon: '❄️', rarity: 'Rare' },
+  { id: 10_002, name: 'Dragon Armor',   icon: '🐲', rarity: 'Epic' },
 ]
 
 export const RECIPES = [
   {
-    id: 1,
+    id: 0,
     name: 'Flaming Sword',
     icon: '🔥',
     ingredients: [
       { itemId: 1, name: 'Iron Ore',     amount: 2 },
       { itemId: 3, name: 'Mana Crystal', amount: 1 },
     ],
-    aethCost: '50',
-    outputItemId: 100,
+    usdCost: '50',
+    outputItemId: 10_000,
     outputAmount: 1,
   },
   {
-    id: 2,
+    id: 1,
     name: 'Frost Staff',
     icon: '❄️',
     ingredients: [
       { itemId: 5, name: 'Ancient Wood',  amount: 2 },
       { itemId: 3, name: 'Mana Crystal',  amount: 2 },
     ],
-    aethCost: '60',
-    outputItemId: 101,
+    usdCost: '60',
+    outputItemId: 10_001,
     outputAmount: 1,
   },
   {
-    id: 3,
+    id: 2,
     name: 'Dragon Armor',
     icon: '🐲',
     ingredients: [
       { itemId: 4, name: 'Dragon Scale', amount: 3 },
       { itemId: 2, name: 'Mythril',      amount: 2 },
     ],
-    aethCost: '120',
-    outputItemId: 102,
+    usdCost: '120',
+    outputItemId: 10_002,
     outputAmount: 1,
   },
 ]

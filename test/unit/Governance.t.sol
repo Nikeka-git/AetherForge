@@ -21,9 +21,11 @@ contract GovernanceTest is Test {
     bytes32 constant EXECUTOR_ROLE = keccak256("EXECUTOR_ROLE");
 
     uint256 constant INITIAL_SUPPLY = 100_000_000 * 1e18;
-    uint256 constant VOTING_DELAY = 7200; // blocks
-    uint256 constant VOTING_PERIOD = 50_400; // blocks
-    uint256 constant TIMELOCK_DELAY = 2 days;
+    // Testnet values matching AetherGovernor (VOTING_DELAY_BLOCKS=10, VOTING_PERIOD_BLOCKS=100)
+    // and AetherTimelock (MIN_DELAY=60 seconds).
+    uint256 constant VOTING_DELAY = 10; // blocks (testnet: ~2.5 s on Arbitrum Sepolia)
+    uint256 constant VOTING_PERIOD = 100; // blocks (testnet: ~25 s)
+    uint256 constant TIMELOCK_DELAY = 60; // seconds (testnet value)
 
     // Actors
 

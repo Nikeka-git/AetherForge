@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { useAccount, useReadContracts, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { useAccount, useReadContracts, useWaitForTransactionReceipt } from 'wagmi'
+import { useGasWrite } from '../lib/useGasWrite.js'
 import { parseEther, formatEther } from 'viem'
 import { ADDRESSES, AETH_ABI, TREASURY_ABI, AMM_ABI } from '../lib/contracts.js'
 import { parseContractError } from '../lib/wagmi.js'
@@ -19,14 +20,13 @@ export default function Marketplace() {
         functionName: 'allowance', args: [address, ADDRESSES.AMMMarketplace] },
       { address: ADDRESSES.AMMMarketplace, abi: AMM_ABI, functionName: 'getReserves' },
     ],
-    query: { enabled: isConnected && !!address },
-  })
+    query: { enabled: isConnected && !!address } })
 
   const [aethBal, allowance, reserves] = data?.map(d => d.result) ?? []
   const reserveA = reserves?.[0]
   const reserveB = reserves?.[1]
 
-  const { writeContract, data: txHash, isPending } = useWriteContract()
+  const { writeContract, data: txHash, isPending } = useGasWrite()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash: txHash })
   useEffect(() => { if (isSuccess) refetch() }, [isSuccess])
 
@@ -47,8 +47,7 @@ export default function Marketplace() {
           address: ADDRESSES.AMMMarketplace,
           abi: AMM_ABI,
           functionName: 'swap',
-          args: [tokenIn, parsed, minParsed],
-        })
+          args: [tokenIn, parsed, minParsed] })
       }
     } catch (e) {
       setTxError(parseContractError(e))
@@ -86,8 +85,7 @@ export default function Marketplace() {
               background: direction === d ? 'rgba(255,180,0,0.15)' : 'transparent',
               border: `1px solid ${direction === d ? 'var(--amber)' : 'var(--border)'}`,
               borderRadius: 8, color: direction === d ? 'var(--amber)' : 'var(--muted)',
-              fontFamily: 'var(--font-display)', fontSize: '0.82rem', cursor: 'pointer',
-            }}>
+              fontFamily: 'var(--font-display)', fontSize: '0.82rem', cursor: 'pointer' }}>
               {d ? 'AETH → gAETH' : 'gAETH → AETH'}
             </button>
           ))}
@@ -102,8 +100,7 @@ export default function Marketplace() {
               width: '100%', boxSizing: 'border-box',
               background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)',
               borderRadius: 8, padding: '12px 14px',
-              color: 'var(--text)', fontSize: '1.1rem', fontFamily: 'var(--font-display)',
-            }}
+              color: 'var(--text)', fontSize: '1.1rem', fontFamily: 'var(--font-display)' }}
           />
           <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: 4 }}>
             {direction ? 'AETH' : 'gAETH'} balance: {fmt(aethBal)}
@@ -119,8 +116,7 @@ export default function Marketplace() {
               width: '100%', boxSizing: 'border-box',
               background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)',
               borderRadius: 8, padding: '12px 14px',
-              color: 'var(--text)', fontSize: '1.1rem', fontFamily: 'var(--font-display)',
-            }}
+              color: 'var(--text)', fontSize: '1.1rem', fontFamily: 'var(--font-display)' }}
           />
         </div>
 
@@ -146,8 +142,7 @@ export default function Marketplace() {
             border: 'none', borderRadius: 8,
             fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.9rem',
             cursor: !isConnected || !amountIn || isPending || isConfirming ? 'not-allowed' : 'pointer',
-            letterSpacing: '0.06em',
-          }}
+            letterSpacing: '0.06em' }}
         >
           {isPending ? 'Confirm in wallet…' :
            isConfirming ? 'Confirming…' :

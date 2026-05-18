@@ -62,7 +62,11 @@ contract GameParametersV2 is GameParametersV1 {
      * @dev    Uses reinitializer(2) so it can only run once on the V2 impl.
      *         V1 initializer has already run; this only sets the new fields.
      */
-    function initializeV2(uint256 winStreakBonusBps, uint256 discountBps) external reinitializer(2) {
+    function initializeV2(uint256 winStreakBonusBps, uint256 discountBps)
+        external
+        reinitializer(2)
+        onlyRole(UPGRADER_ROLE)
+    {
         if (winStreakBonusBps + lootDropRateCommon + lootDropRateRare > BPS_DENOMINATOR) {
             revert GameParameters__DropRatesTooHigh(winStreakBonusBps, lootDropRateCommon);
         }

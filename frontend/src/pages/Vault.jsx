@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { useAccount, useReadContracts, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
-import { parseEther, formatEther } from 'viem'
+import { useAccount, useReadContracts, useWaitForTransactionReceipt } from 'wagmi'
+import { useGasWrite } from '../lib/useGasWrite.js'
+import { parseEther, formatEther, formatUnits } from 'viem'
 import { ADDRESSES, AETH_ABI, TREASURY_ABI } from '../lib/contracts.js'
 import { parseContractError } from '../lib/wagmi.js'
 
@@ -17,13 +18,13 @@ export default function Vault() {
       { address: ADDRESSES.GuildTreasury, abi: TREASURY_ABI, functionName: 'balanceOf', args: [address] },
       { address: ADDRESSES.GuildTreasury, abi: TREASURY_ABI, functionName: 'totalAssets' },
       { address: ADDRESSES.GuildTreasury, abi: TREASURY_ABI, functionName: 'totalSupply' },
+      { address: ADDRESSES.GuildTreasury, abi: TREASURY_ABI, functionName: 'previewDeposit', args: [parseEther('1')] },
     ],
-    query: { enabled: isConnected && !!address },
-  })
+    query: { enabled: isConnected && !!address } })
 
-  const [aethBal, allowance, shares, totalAssets, totalShares] = data?.map(d => d.result) ?? []
+  const [aethBal, allowance, shares, totalAssets, totalShares, sharesPerAeth] = data?.map(d => d.result) ?? []
 
-  const { writeContract, data: txHash, isPending } = useWriteContract()
+  const { writeContractAsync, data: txHash, isPending } = useGasWrite()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash: txHash })
 
   useEffect(() => { if (isSuccess) refetch() }, [isSuccess])
@@ -36,26 +37,23 @@ export default function Vault() {
     try {
       const parsed = parseEther(amount)
       if (needsApproval) {
-        writeContract({
+        await writeContractAsync({
           address: ADDRESSES.AethToken,
           abi: AETH_ABI,
           functionName: 'approve',
-          args: [ADDRESSES.GuildTreasury, parsed],
-        })
+          args: [ADDRESSES.GuildTreasury, parsed] })
       } else if (tab === 'deposit') {
-        writeContract({
+        await writeContractAsync({
           address: ADDRESSES.GuildTreasury,
           abi: TREASURY_ABI,
           functionName: 'deposit',
-          args: [parsed, address],
-        })
+          args: [parsed, address] })
       } else {
-        writeContract({
+        await writeContractAsync({
           address: ADDRESSES.GuildTreasury,
           abi: TREASURY_ABI,
           functionName: 'redeem',
-          args: [parsed, address, address],
-        })
+          args: [parsed, address, address] })
       }
     } catch (e) {
       setTxError(parseContractError(e))
@@ -63,9 +61,15 @@ export default function Vault() {
   }
 
   const fmt = v => v !== undefined ? parseFloat(formatEther(v)).toLocaleString('en-US', { maximumFractionDigits: 4 }) : '—'
-  const sharePrice = totalAssets && totalShares && totalShares > 0n
-    ? parseFloat(formatEther(totalAssets)) / parseFloat(formatEther(totalShares))
-    : 1
+  // GuildTreasury._decimalsOffset() = 3  →  shares have 21 decimals (18 asset + 3 offset).
+  const SHARE_DECIMALS = 21
+  // Rate: show raw integer shares per 1 AETH (previewDeposit result).
+  // Dividing by 10^21 (SHARE_DECIMALS) gives ~8.5e-16 which is unreadable.
+  // The vault is intentionally inflated via direct seeding, so the integer
+  // value (e.g. "850,606 shares") is the most honest human-readable display.
+  const sharesPerAethDisplay = sharesPerAeth !== undefined
+    ? Number(sharesPerAeth).toLocaleString('en-US')
+    : '—'
 
   return (
     <div style={{ maxWidth: 1140, margin: '0 auto', padding: '32px 24px' }}>
@@ -79,8 +83,8 @@ export default function Vault() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 32 }}>
         {[
           { label: 'Total Assets', value: `${fmt(totalAssets)} AETH` },
-          { label: 'Share Price',  value: `${sharePrice.toFixed(6)} AETH` },
-          { label: 'Your Shares',  value: fmt(shares) },
+          { label: 'Shares per AETH', value: `${sharesPerAethDisplay} shares` },
+          { label: 'Your Shares',  value: shares !== undefined ? Number(shares).toLocaleString('en-US') + ' shares' : '—' },
         ].map(({ label, value }) => (
           <div key={label} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '20px 24px' }}>
             <div style={{ fontSize: '0.72rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>{label}</div>
@@ -98,13 +102,12 @@ export default function Vault() {
               borderBottom: tab === t ? '2px solid var(--amber)' : '2px solid transparent',
               color: tab === t ? 'var(--amber)' : 'var(--muted)',
               fontFamily: 'var(--font-display)', fontSize: '0.85rem', cursor: 'pointer',
-              textTransform: 'uppercase', letterSpacing: '0.08em',
-            }}>{t}</button>
+              textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t}</button>
           ))}
         </div>
 
         <div style={{ marginBottom: 8, fontSize: '0.8rem', color: 'var(--muted)' }}>
-          {tab === 'deposit' ? `Balance: ${fmt(aethBal)} AETH` : `Shares: ${fmt(shares)}`}
+          {tab === 'deposit' ? `Balance: ${fmt(aethBal)} AETH` : `Shares: ${shares !== undefined ? Number(shares).toLocaleString('en-US') : '—'}`}
         </div>
 
         <div style={{ position: 'relative', marginBottom: 20 }}>
@@ -117,8 +120,7 @@ export default function Vault() {
               width: '100%', boxSizing: 'border-box',
               background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)',
               borderRadius: 8, padding: '12px 80px 12px 14px',
-              color: 'var(--text)', fontSize: '1.1rem', fontFamily: 'var(--font-display)',
-            }}
+              color: 'var(--text)', fontSize: '1.1rem', fontFamily: 'var(--font-display)' }}
           />
           <button
             onClick={() => setAmount(formatEther(tab === 'deposit' ? (aethBal ?? 0n) : (shares ?? 0n)))}
@@ -126,8 +128,7 @@ export default function Vault() {
               position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
               background: 'rgba(255,180,0,0.15)', border: '1px solid var(--amber)',
               borderRadius: 4, padding: '4px 10px', color: 'var(--amber)',
-              fontSize: '0.72rem', cursor: 'pointer', fontFamily: 'var(--font-display)',
-            }}
+              fontSize: '0.72rem', cursor: 'pointer', fontFamily: 'var(--font-display)' }}
           >MAX</button>
         </div>
 
@@ -153,8 +154,7 @@ export default function Vault() {
             border: 'none', borderRadius: 8,
             fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.9rem',
             cursor: !isConnected || !amount || isPending || isConfirming ? 'not-allowed' : 'pointer',
-            letterSpacing: '0.06em',
-          }}
+            letterSpacing: '0.06em' }}
         >
           {isPending ? 'Confirm in wallet…' :
            isConfirming ? 'Confirming…' :

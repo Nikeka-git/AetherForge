@@ -3,7 +3,7 @@
 // The URL is available in Graph Studio → your subgraph → Details tab.
 const SUBGRAPH_URL =
   import.meta.env.VITE_SUBGRAPH_URL ||
-  'https://api.studio.thegraph.com/query/REPLACE_ME/aetherforge-arena/version/latest'
+  'https://api.studio.thegraph.com/query/1753474/aether-forge/version/latest'
 
 async function query(gql, variables = {}) {
   const res = await fetch(SUBGRAPH_URL, {

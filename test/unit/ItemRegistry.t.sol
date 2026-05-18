@@ -24,7 +24,9 @@ contract ItemRegistryTest is Test {
     address admin = makeAddr("admin");
     address minter = makeAddr("minter");
     address burner = makeAddr("burner");
-    address alice = makeAddr("alice");
+
+    // Use address(this) as recipient — the test contract implements ERC1155 receiver hooks below
+    address alice = address(this);
 
     // System under test
 
@@ -38,7 +40,22 @@ contract ItemRegistryTest is Test {
         vm.stopPrank();
     }
 
-    // Test 1: mintResource credits the correct balance
+    // ─── ERC-1155 receiver hooks ───────────────────────────────────────────────
+    // Required so that address(this) can receive ERC-1155 tokens via _safeMint.
+
+    function onERC1155Received(address, address, uint256, uint256, bytes memory) public pure returns (bytes4) {
+        return this.onERC1155Received.selector;
+    }
+
+    function onERC1155BatchReceived(address, address, uint256[] memory, uint256[] memory, bytes memory)
+        public
+        pure
+        returns (bytes4)
+    {
+        return this.onERC1155BatchReceived.selector;
+    }
+
+    // ─── Test 1: mintResource credits the correct balance ─────────────────────
 
     function test_MintResourceCreditsBalance() public {
         vm.prank(minter);
@@ -48,7 +65,7 @@ contract ItemRegistryTest is Test {
         assertEq(registry.totalSupply(IRON_ID), 100, "iron total supply wrong");
     }
 
-    // Test 2: mintEquipment credits the correct balance
+    // ─── Test 2: mintEquipment credits the correct balance ────────────────────
 
     function test_MintEquipmentCreditsBalance() public {
         vm.prank(minter);
@@ -57,16 +74,15 @@ contract ItemRegistryTest is Test {
         assertEq(registry.balanceOf(alice, SWORD_ID), 1, "sword balance wrong");
     }
 
-    // Test 3: Invalid item ID reverts
+    // ─── Test 3: Invalid item ID reverts ──────────────────────────────────────
 
     function test_InvalidResourceIdReverts() public {
         vm.prank(minter);
-        // ID 0 is reserved / invalid
         vm.expectRevert(abi.encodeWithSignature("ItemRegistry__InvalidItemId(uint256)", 0));
         registry.mintResource(alice, 0, 10);
     }
 
-    // Test 4: BURNER_ROLE can burn items
+    // ─── Test 4: BURNER_ROLE can burn items ───────────────────────────────────
 
     function test_BurnerCanBurnItems() public {
         vm.prank(minter);
@@ -79,7 +95,7 @@ contract ItemRegistryTest is Test {
         assertEq(registry.totalSupply(IRON_ID), 20, "total supply after burn wrong");
     }
 
-    // Test 5: mintBatch mints multiple items in one call
+    // ─── Test 5: mintBatch mints multiple items in one call ───────────────────
 
     function test_MintBatchMintsMultipleItems() public {
         uint256[] memory ids = new uint256[](3);

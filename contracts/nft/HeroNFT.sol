@@ -113,7 +113,8 @@ contract HeroNFT is Initializable, ERC721Upgradeable, AccessControlUpgradeable, 
 
     /**
      * @notice Mint a new hero NFT. Open to any caller — no role required.
-     * @dev    Anyone can create a hero; privileged actions (levelUp) remain
+     * @dev    Anyone can create one hero; the 100 AETH starter pack is a one-time
+     *         grant per mint, not per wallet. Privileged actions (levelUp) remain
      *         gated by MINTER_ROLE so only the arena can modify hero stats.
      * @param to        Recipient address.
      * @param heroClass Class of the hero (0=Warrior ... 3=Paladin).

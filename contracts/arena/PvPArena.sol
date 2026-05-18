@@ -306,6 +306,11 @@ contract PvPArena is VRFConsumerBaseV2Plus, AccessControl, Pausable, ReentrancyG
 
             if (b.player1 == msg.sender) revert PvPArena__SamePlayer(msg.sender);
 
+            // Player2 must pay the same fee as player1 (the snapshot), not the current entryFee.
+            // If governance changed entryFee between the two registrations, the pot would be
+            // miscalculated and the arena would be insolvent. Use the snapshot instead.
+            uint256 matchedFee = b.entryFeeSnapshot;
+
             b.player2 = msg.sender;
             b.hero2Id = heroId;
             b.state = BattleState.Matched;
@@ -314,7 +319,7 @@ contract PvPArena is VRFConsumerBaseV2Plus, AccessControl, Pausable, ReentrancyG
             openSlot = 0;
 
             // INTERACTIONS
-            IERC20(address(aethToken)).safeTransferFrom(msg.sender, address(this), fee);
+            IERC20(address(aethToken)).safeTransferFrom(msg.sender, address(this), matchedFee);
             emit Registered(battleId, msg.sender, heroId);
 
             // Fire VRF — external call last (CEI).
@@ -354,6 +359,35 @@ contract PvPArena is VRFConsumerBaseV2Plus, AccessControl, Pausable, ReentrancyG
         // INTERACTIONS
         IERC20(address(aethToken)).safeTransfer(msg.sender, reward);
         emit RewardClaimed(battleId, msg.sender, reward);
+    }
+
+    /**
+     * @notice Cancel your own registration while still waiting for an opponent.
+     * @dev    Only callable by player1 of a Registered (single-player waiting) battle.
+     *         Frees the hero from heroInBattle and clears the openSlot.
+     *         CEI: checks -> effects -> interactions.
+     * @param battleId  The Registered battle ID to cancel.
+     */
+    function cancelRegistration(uint256 battleId) external nonReentrant {
+        Battle storage b = battles[battleId];
+
+        // CHECKS
+        if (b.state != BattleState.Registered) {
+            revert PvPArena__InvalidState(battleId, b.state, BattleState.Registered);
+        }
+        if (b.player1 != msg.sender) revert PvPArena__NotWinner(msg.sender, battleId);
+
+        uint256 fee = b.entryFeeSnapshot;
+        uint256 heroId = b.hero1Id;
+
+        // EFFECTS
+        b.state = BattleState.Cancelled;
+        heroInBattle[heroId] = 0;
+        if (openSlot == battleId) openSlot = 0;
+
+        // INTERACTIONS
+        IERC20(address(aethToken)).safeTransfer(msg.sender, fee);
+        emit Cancelled(battleId, msg.sender);
     }
 
     /**

@@ -255,7 +255,9 @@ contract MercenaryGuild is AccessControl, ReentrancyGuard, IERC721Receiver, IERC
         }
 
         uint256 totalFee = (listing.pricePerDay * duration) / SECONDS_PER_DAY;
-        uint256 protocolFee = (totalFee * protocolFeeBps) / BPS_DENOMINATOR;
+        // Multiply before divide: compute protocol fee from raw numerator to avoid
+        // precision loss from the intermediate division (Slither divide-before-multiply).
+        uint256 protocolFee = (listing.pricePerDay * duration * protocolFeeBps) / (SECONDS_PER_DAY * BPS_DENOMINATOR);
         uint256 lenderFee = totalFee - protocolFee;
 
         rentalId = ++_nextRentalId;
@@ -297,6 +299,9 @@ contract MercenaryGuild is AccessControl, ReentrancyGuard, IERC721Receiver, IERC
         // Checks
         if (rental.borrower != msg.sender) revert Guild__NotBorrower(msg.sender, rentalId);
         if (listing.state != ListingState.Rented) revert Guild__RentalAlreadyEnded(rentalId);
+        // Prevent calling returnEarly after the rental has already expired.
+        // Once expired, only reclaimExpired() should be used by the lender.
+        if (block.timestamp >= rental.endTime) revert Guild__RentalAlreadyEnded(rentalId);
 
         address lender = listing.lender;
 
@@ -444,7 +449,7 @@ contract MercenaryGuild is AccessControl, ReentrancyGuard, IERC721Receiver, IERC
         Listing storage listing = listings[listingId];
         if (listing.lender == address(0)) revert Guild__ListingNotFound(listingId);
         totalFee = (listing.pricePerDay * duration) / SECONDS_PER_DAY;
-        protocolFee_ = (totalFee * protocolFeeBps) / BPS_DENOMINATOR;
+        protocolFee_ = (listing.pricePerDay * duration * protocolFeeBps) / (SECONDS_PER_DAY * BPS_DENOMINATOR);
         lenderFee = totalFee - protocolFee_;
     }
 

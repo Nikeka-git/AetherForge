@@ -5,8 +5,16 @@ import { Test } from "forge-std/Test.sol";
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
+import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 
 import { MercenaryGuild } from "../../contracts/rental/MercenaryGuild.sol";
+
+/**
+ * @dev OZ v5 calls onERC721Received / onERC1155Received on ALL token recipients.
+ *      TokenReceiver implements both hooks so it can safely receive NFTs in tests.
+ */
+contract TokenReceiver is ERC721Holder, ERC1155Holder { }
 
 // Mock helpers
 
@@ -92,9 +100,13 @@ contract MercenaryGuildTest is Test {
 
     address internal admin = makeAddr("admin");
     address internal feeRecipient = makeAddr("feeRecipient");
-    address internal alice = makeAddr("alice"); // lender
-    address internal bob = makeAddr("bob"); // borrower
-    address internal eve = makeAddr("eve"); // attacker
+    // OZ v5: token transfers call onReceived on ALL recipients.
+    // alice and bob must implement ERC721Receiver + ERC1155Receiver.
+    TokenReceiver internal aliceReceiver;
+    TokenReceiver internal bobReceiver;
+    address internal alice; // = address(aliceReceiver), set in setUp
+    address internal bob; // = address(bobReceiver),   set in setUp
+    address internal eve = makeAddr("eve"); // attacker (never receives tokens directly)
 
     // Contracts
 
@@ -115,6 +127,12 @@ contract MercenaryGuildTest is Test {
     // Setup
 
     function setUp() public {
+        // Deploy receiver contracts so OZ v5 token transfer hooks pass
+        aliceReceiver = new TokenReceiver();
+        bobReceiver = new TokenReceiver();
+        alice = address(aliceReceiver);
+        bob = address(bobReceiver);
+
         aeth = new MockAETH();
         heroNFT = new MockHeroNFT();
         itemRegistry = new MockItemRegistry();

@@ -248,7 +248,7 @@ contract CraftingEngineTest is Test {
 
     function test_craft_RevertsOnUnknownRecipe() public {
         vm.prank(player);
-        vm.expectRevert(abi.encodeWithSelector(CraftingEngine.CraftingEngine__RecipeInactive.selector, 99));
+        vm.expectRevert(abi.encodeWithSelector(CraftingEngine.CraftingEngine__UnknownRecipe.selector, 99));
         engine.craft(99);
     }
 

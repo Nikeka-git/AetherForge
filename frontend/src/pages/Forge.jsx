@@ -1,6 +1,7 @@
-import { useState } from 'react'
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
-import { ADDRESSES, CRAFTING_ABI, RECIPES } from '../lib/contracts.js'
+import { useState, useEffect } from 'react'
+import { useAccount, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
+import { useGasWrite } from '../lib/useGasWrite.js'
+import { ADDRESSES, CRAFTING_ABI, AETH_ABI, RECIPES } from '../lib/contracts.js'
 import { parseContractError } from '../lib/wagmi.js'
 
 export default function Forge() {
@@ -8,18 +9,44 @@ export default function Forge() {
   const [selected, setSelected] = useState(null)
   const [txError, setTxError] = useState(null)
 
-  const { writeContract, data: txHash, isPending } = useWriteContract()
+  const { writeContract: writeApprove, data: approveTxHash, isPending: isApprovePending } = useGasWrite()
+  const { writeContract, data: txHash, isPending } = useGasWrite()
+  const { isLoading: isConfirmingApprove, isSuccess: isApproveSuccess } = useWaitForTransactionReceipt({ hash: approveTxHash })
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash: txHash })
+
+  const { data: aethAllowance, refetch: refetchAllowance } = useReadContract({
+    address: ADDRESSES.AethToken,
+    abi: AETH_ABI,
+    functionName: 'allowance',
+    args: [address, ADDRESSES.CraftingEngine],
+    query: { enabled: isConnected && !!address } })
+
+  useEffect(() => {
+    if (isApproveSuccess) refetchAllowance()
+  }, [isApproveSuccess])
 
   function handleCraft() {
     setTxError(null)
     try {
-      writeContract({
-        address: ADDRESSES.CraftingEngine,
-        abi: CRAFTING_ABI,
-        functionName: 'craft',
-        args: [BigInt(selected)],
-      })
+      if (!recipe) return
+      if (aethAllowance === undefined) return
+      // Approve a generous fixed amount (10 000 AETH) so the craft goes through.
+      // The contract oracle determines exact AETH cost at execution time.
+      const APPROVE_AMOUNT = BigInt(10_000) * BigInt(1e18)
+      if (aethAllowance < APPROVE_AMOUNT / 10n) {
+        writeApprove({
+          address: ADDRESSES.AethToken,
+          abi: AETH_ABI,
+          functionName: 'approve',
+          args: [ADDRESSES.CraftingEngine, APPROVE_AMOUNT],
+        })
+      } else {
+        writeContract({
+          address: ADDRESSES.CraftingEngine,
+          abi: CRAFTING_ABI,
+          functionName: 'craft',
+          args: [BigInt(selected)] })
+      }
     } catch (e) {
       setTxError(parseContractError(e))
     }
@@ -45,8 +72,7 @@ export default function Forge() {
               background: selected === r.id ? 'rgba(255,180,0,0.08)' : 'var(--surface)',
               border: `1px solid ${selected === r.id ? 'var(--amber)' : 'var(--border)'}`,
               borderRadius: 10, padding: 20, cursor: 'pointer',
-              transition: 'all 180ms ease',
-            }}
+              transition: 'all 180ms ease' }}
           >
             <div style={{ fontSize: '2rem', marginBottom: 10 }}>{r.icon}</div>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', color: 'var(--text)', marginBottom: 8 }}>{r.name}</div>
@@ -55,7 +81,7 @@ export default function Forge() {
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>AETH Cost</span>
-              <span style={{ fontFamily: 'var(--font-display)', color: 'var(--amber)', fontSize: '0.9rem' }}>{r.aethCost} AETH</span>
+              <span style={{ fontFamily: 'var(--font-display)', color: 'var(--amber)', fontSize: '0.9rem' }}>${r.usdCost} USD</span>
             </div>
           </div>
         ))}
@@ -76,7 +102,7 @@ export default function Forge() {
             ))}
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', fontSize: '0.85rem' }}>
               <span style={{ color: 'var(--muted)' }}>AETH fee</span>
-              <span style={{ color: 'var(--amber)', fontFamily: 'var(--font-display)' }}>{recipe.aethCost} AETH</span>
+              <span style={{ color: 'var(--amber)', fontFamily: 'var(--font-display)' }}>${recipe.usdCost} USD</span>
             </div>
           </div>
 
@@ -101,8 +127,7 @@ export default function Forge() {
               border: 'none', borderRadius: 8,
               fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.9rem',
               cursor: !isConnected || isPending || isConfirming ? 'not-allowed' : 'pointer',
-              letterSpacing: '0.06em',
-            }}
+              letterSpacing: '0.06em' }}
           >
             {isPending ? 'Confirm in wallet…' : isConfirming ? 'Confirming…' : `Forge ${recipe.name}`}
           </button>

@@ -37,6 +37,9 @@ contract HeroNFTFactory is AccessControl {
     /// @notice All proxy addresses deployed by this factory (both CREATE and CREATE2).
     address[] public deployedHeroes;
 
+    /// @notice Tracks which CREATE2 salts have already been used to prevent duplicate deploys.
+    mapping(bytes32 => bool) private _usedSalts;
+
     // Errors
 
     error HeroNFTFactory__ZeroAddress();
@@ -112,6 +115,8 @@ contract HeroNFTFactory is AccessControl {
         if (proxyAdmin == address(0) || upgrader == address(0) || aethToken == address(0)) {
             revert HeroNFTFactory__ZeroAddress();
         }
+        if (_usedSalts[salt]) revert HeroNFTFactory__SaltAlreadyUsed(salt);
+        _usedSalts[salt] = true;
 
         bytes memory initData = abi.encodeCall(HeroNFT.initialize, (proxyAdmin, upgrader, baseURI, aethToken));
 

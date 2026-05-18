@@ -45,12 +45,23 @@ contract AetherGovernor is
     GovernorTimelockControl
 {
     // Constants
+    //
+    // Production values (Ethereum mainnet, 12 s/block):
+    //   VOTING_DELAY  = 7 200 blocks  (~1 day)
+    //   VOTING_PERIOD = 50 400 blocks (~1 week)
+    //
+    // Testnet values (Arbitrum Sepolia, ~0.25 s/block):
+    //   VOTING_DELAY  = 10 blocks  (~2.5 seconds)
+    //   VOTING_PERIOD = 100 blocks (~25 seconds)
+    //
+    // These short delays are intentional for testnet demonstration.
+    // A production deployment would use the commented mainnet values above.
 
-    /// @notice 1 day voting delay in blocks (12 s/block -> 7200 blocks).
-    uint48 public constant VOTING_DELAY_BLOCKS = 7200;
+    /// @notice Testnet voting delay: 10 blocks (~2.5 s on Arbitrum Sepolia).
+    uint48 public constant VOTING_DELAY_BLOCKS = 10;
 
-    /// @notice 1 week voting period in blocks (12 s/block -> 50400 blocks).
-    uint32 public constant VOTING_PERIOD_BLOCKS = 50_400;
+    /// @notice Testnet voting period: 100 blocks (~25 s on Arbitrum Sepolia).
+    uint32 public constant VOTING_PERIOD_BLOCKS = 100;
 
     /// @notice Quorum: 4 % of total supply at proposal snapshot.
     uint256 public constant QUORUM_FRACTION = 4;
@@ -80,9 +91,16 @@ contract AetherGovernor is
      *         (measured at the block before the proposal is created).
      * @dev    Overrides GovernorSettings.proposalThreshold() to make the threshold
      *         dynamic (1 % of current total supply) instead of a fixed token amount.
+     *
+     *         Guard: if clock() == 0 (fresh fork or genesis block in tests) calling
+     *         getPastTotalSupply(uint48_max) would revert with checked underflow.
+     *         In that case we return 0 so governance is still operational on block 0
+     *         (this edge case cannot occur on any live network where block.number > 0).
      */
     function proposalThreshold() public view override(Governor, GovernorSettings) returns (uint256) {
-        return token().getPastTotalSupply(clock() - 1) / 100; // 1 %
+        uint48 currentClock = clock();
+        if (currentClock == 0) return 0;
+        return token().getPastTotalSupply(currentClock - 1) / 100; // 1 %
     }
 
     // Required OZ overrides

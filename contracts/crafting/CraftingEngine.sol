@@ -191,8 +191,12 @@ contract CraftingEngine is AccessControl, Pausable, ReentrancyGuard {
 
         // CHECKS
 
+        if (recipeId >= nextRecipeId) {
+            // Recipe was never created.
+            revert CraftingEngine__UnknownRecipe(recipeId);
+        }
         if (!recipe.active) {
-            // Catches both "never existed" (active=false default) and removed recipes.
+            // Recipe existed but was removed via removeRecipe().
             revert CraftingEngine__RecipeInactive(recipeId);
         }
 
@@ -316,6 +320,7 @@ contract CraftingEngine is AccessControl, Pausable, ReentrancyGuard {
      * @notice Disable a recipe (soft-delete; recipeId is never reused).
      */
     function removeRecipe(uint256 recipeId) external onlyRole(ADMIN_ROLE) {
+        if (recipeId >= nextRecipeId) revert CraftingEngine__UnknownRecipe(recipeId);
         if (!_recipes[recipeId].active) revert CraftingEngine__RecipeInactive(recipeId);
         _recipes[recipeId].active = false;
         emit RecipeRemoved(recipeId);
@@ -326,6 +331,7 @@ contract CraftingEngine is AccessControl, Pausable, ReentrancyGuard {
      * @dev    Callable via a governance proposal routed through the Timelock.
      */
     function setRecipeCost(uint256 recipeId, uint256 newUsdCost) external onlyRole(ADMIN_ROLE) {
+        if (recipeId >= nextRecipeId) revert CraftingEngine__UnknownRecipe(recipeId);
         if (!_recipes[recipeId].active) revert CraftingEngine__RecipeInactive(recipeId);
         uint256 old = _recipes[recipeId].usdCost;
         _recipes[recipeId].usdCost = newUsdCost;
@@ -373,6 +379,7 @@ contract CraftingEngine is AccessControl, Pausable, ReentrancyGuard {
      */
     function previewAethCost(uint256 recipeId) external view returns (uint256) {
         Recipe storage recipe = _recipes[recipeId];
+        if (recipeId >= nextRecipeId) revert CraftingEngine__UnknownRecipe(recipeId);
         if (!recipe.active) revert CraftingEngine__RecipeInactive(recipeId);
         return _computeAethCost(recipe.usdCost);
     }

@@ -251,17 +251,18 @@ contract Deploy is Script {
         itemRegistry.grantRole(itemRegistry.MINTER_ROLE(), address(craftingEngine));
         itemRegistry.grantRole(itemRegistry.BURNER_ROLE(), address(craftingEngine));
 
-        // HeroNFT: grant MINTER_ROLE to PvPArena (optional: arena does not mint heroes,
-        //          but may need it for future reward drops). Skip if not needed.
-        // heroNFT.grantRole(heroNFT.MINTER_ROLE(), address(pvpArena));
+        // ── 15. Seed recipes + starter items ─────────────────────────────────
+        // MUST happen BEFORE _transferAdminToTimelock because:
+        //   - craftingEngine.grantRole(ADMIN_ROLE, timelock) requires DEFAULT_ADMIN_ROLE
+        //   - itemRegistry.grantRole(MINTER_ROLE, deployer) requires DEFAULT_ADMIN_ROLE
+        // Both are revoked by _transferAdminToTimelock — so seed first.
+        _seedRecipes(deployer);
 
-        // Transfer DEFAULT_ADMIN_ROLE to Timelock on all contracts.
-        // Deployer retains admin temporarily during setup; revoke at the end.
+        // ── 16. Transfer DEFAULT_ADMIN to Timelock, revoke from deployer ──────
         _transferAdminToTimelock(deployer);
 
-        // GameParameters: grant PARAM_MANAGER_ROLE to Timelock.
+        // GameParameters: handled separately — not included in _transferAdminToTimelock.
         gameParameters.grantRole(gameParameters.PARAM_MANAGER_ROLE(), address(timelock));
-        // UPGRADER_ROLE is already held by deployer; transfer to Timelock then revoke.
         gameParameters.grantRole(gameParameters.UPGRADER_ROLE(), address(timelock));
         gameParameters.revokeRole(gameParameters.UPGRADER_ROLE(), deployer);
         gameParameters.revokeRole(gameParameters.DEFAULT_ADMIN_ROLE(), deployer);
@@ -273,9 +274,69 @@ contract Deploy is Script {
     }
 
     /**
-     * @dev Transfer DEFAULT_ADMIN_ROLE from deployer to Timelock on all contracts
-     *      that use AccessControl. Revoke deployer's admin last.
+     * @dev Seed three starter recipes into CraftingEngine.
+     *      Uses equipment IDs >= 10_000 to satisfy ItemRegistry.EQUIPMENT_ID_MIN.
+     *      usdCost is in Chainlink 8-decimal format (e.g. 50e8 = $50).
      */
+    function _seedRecipes(address deployer) internal {
+        // Recipe 1: Flaming Sword — 2x Iron Ore (id=1) + 1x Mana Crystal (id=3) → equipment id 10_000
+        uint256[] memory ids1 = new uint256[](2);
+        uint256[] memory amts1 = new uint256[](2);
+        ids1[0] = 1; // Iron Ore
+        amts1[0] = 2;
+        ids1[1] = 3; // Mana Crystal
+        amts1[1] = 1;
+        craftingEngine.addRecipe(ids1, amts1, 50e8, 10_000, 1);
+        console2.log("Recipe 1 added: Flaming Sword (outputId=10000)");
+
+        // Recipe 2: Frost Staff — 2x Ancient Wood (id=5) + 2x Mana Crystal (id=3) → equipment id 10_001
+        uint256[] memory ids2 = new uint256[](2);
+        uint256[] memory amts2 = new uint256[](2);
+        ids2[0] = 5; // Ancient Wood
+        amts2[0] = 2;
+        ids2[1] = 3; // Mana Crystal
+        amts2[1] = 2;
+        craftingEngine.addRecipe(ids2, amts2, 60e8, 10_001, 1);
+        console2.log("Recipe 2 added: Frost Staff (outputId=10001)");
+
+        // Recipe 3: Dragon Armor — 3x Dragon Scale (id=4) + 2x Mythril (id=2) → equipment id 10_002
+        uint256[] memory ids3 = new uint256[](2);
+        uint256[] memory amts3 = new uint256[](2);
+        ids3[0] = 4; // Dragon Scale
+        amts3[0] = 3;
+        ids3[1] = 2; // Mythril
+        amts3[1] = 2;
+        craftingEngine.addRecipe(ids3, amts3, 120e8, 10_002, 1);
+        console2.log("Recipe 3 added: Dragon Armor (outputId=10002)");
+
+        // Transfer ADMIN_ROLE to Timelock and revoke deployer — use deployer param, NOT msg.sender.
+        craftingEngine.grantRole(craftingEngine.ADMIN_ROLE(), address(timelock));
+        craftingEngine.revokeRole(craftingEngine.ADMIN_ROLE(), deployer);
+        console2.log("CraftingEngine ADMIN_ROLE transferred to Timelock");
+
+        // Seed starter resources — pass deployer explicitly, NOT msg.sender.
+        _seedStarterItems(deployer);
+    }
+
+    /**
+     * @dev Mint starter resource packs to the deployer for immediate testing.
+     *      Grants MINTER_ROLE temporarily, mints, then revokes.
+     *      Must be called with the actual deployer address — msg.sender in a
+     *      Foundry script resolves to DefaultSender, not the broadcast sender.
+     */
+    function _seedStarterItems(address recipient) internal {
+        itemRegistry.grantRole(itemRegistry.MINTER_ROLE(), recipient);
+
+        itemRegistry.mintResource(recipient, 1, 50); // Iron Ore      x50
+        itemRegistry.mintResource(recipient, 2, 50); // Mythril        x50
+        itemRegistry.mintResource(recipient, 3, 50); // Mana Crystal   x50
+        itemRegistry.mintResource(recipient, 4, 50); // Dragon Scale   x50
+        itemRegistry.mintResource(recipient, 5, 50); // Ancient Wood   x50
+
+        itemRegistry.revokeRole(itemRegistry.MINTER_ROLE(), recipient);
+        console2.log("Starter resources minted to deployer (50 of each ingredient)");
+    }
+
     /**
      * @dev Grant ALL roles to Timelock first, then revoke deployer roles.
      *      This order is critical: revoking DEFAULT_ADMIN_ROLE before all

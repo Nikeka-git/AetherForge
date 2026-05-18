@@ -12,6 +12,9 @@ fs_permissions = [{ access = "read", path = "./coverage" }]
 coverage_exclude = ["script/"]
 coverage_report_ignore = ["script/"]
 no_match_coverage = "script"
+# Prevents forge from using ETH_RPC_URL as a storage backend for
+# non-fork tests. Without this, invariant tests hit the RPC and get 429.
+no_storage_caching = true
 
 remappings = [
     "@openzeppelin/=lib/openzeppelin-contracts/",

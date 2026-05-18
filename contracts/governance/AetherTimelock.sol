@@ -20,7 +20,9 @@ import { TimelockController } from "@openzeppelin/contracts/governance/TimelockC
  * a malicious or mistaken proposal takes effect.
  */
 contract AetherTimelock is TimelockController {
-    uint256 public constant MIN_DELAY = 2 days;
+    // Production value: 2 days (172 800 seconds).
+    // Testnet value:    60 seconds — allows end-to-end governance demo in ~2 minutes.
+    uint256 public constant MIN_DELAY = 60;
 
     /**
      * @param governor    Address of the AetherGovernor contract.
