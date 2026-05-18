@@ -26,26 +26,26 @@ contract Verify is Script {
 
     // ── Deployed addresses (Arbitrum Sepolia) — EIP-55 checksummed ────────────
 
-    address internal constant AETH_TOKEN      = 0x7aA8834926C783F69c5Cad7FCD008A140176c34d;
-    address internal constant GUILD_TREASURY  = 0x117aBC28A926df44746d36e56a04a4332Aa25c3B;
-    address internal constant HERO_NFT        = 0x2C40DF51d53CB9Ff32f031D0840d2B8D8C0b7252;
+    address internal constant AETH_TOKEN = 0x7aA8834926C783F69c5Cad7FCD008A140176c34d;
+    address internal constant GUILD_TREASURY = 0x117aBC28A926df44746d36e56a04a4332Aa25c3B;
+    address internal constant HERO_NFT = 0x2C40DF51d53CB9Ff32f031D0840d2B8D8C0b7252;
     address internal constant AETHER_GOVERNOR = 0x8A7eF55437AeEBD6e2B9Dde1BFbc143E90d50E80;
     address internal constant AETHER_TIMELOCK = 0x3E31dc90CF05410F062788a9CD9128172f529a18;
 
     // ── Known roles ───────────────────────────────────────────────────────────
 
-    bytes32 internal constant DEFAULT_ADMIN  = 0x00;
-    bytes32 internal constant MINTER_ROLE    = keccak256("MINTER_ROLE");
-    bytes32 internal constant UPGRADER_ROLE  = keccak256("UPGRADER_ROLE");
-    bytes32 internal constant PROPOSER_ROLE  = keccak256("PROPOSER_ROLE");
-    bytes32 internal constant EXECUTOR_ROLE  = keccak256("EXECUTOR_ROLE");
+    bytes32 internal constant DEFAULT_ADMIN = 0x00;
+    bytes32 internal constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 internal constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
+    bytes32 internal constant PROPOSER_ROLE = keccak256("PROPOSER_ROLE");
+    bytes32 internal constant EXECUTOR_ROLE = keccak256("EXECUTOR_ROLE");
     bytes32 internal constant CANCELLER_ROLE = keccak256("CANCELLER_ROLE");
 
     // ── Expected governance parameters (from spec §3.1) ───────────────────────
 
-    uint256 internal constant EXPECTED_VOTING_DELAY   = 7200;   // 1 day  (~12 s/block)
-    uint256 internal constant EXPECTED_VOTING_PERIOD  = 50_400; // 1 week
-    uint256 internal constant EXPECTED_QUORUM_BPS     = 4;      // 4 %
+    uint256 internal constant EXPECTED_VOTING_DELAY = 7200; // 1 day  (~12 s/block)
+    uint256 internal constant EXPECTED_VOTING_PERIOD = 50_400; // 1 week
+    uint256 internal constant EXPECTED_QUORUM_BPS = 4; // 4 %
     uint256 internal constant EXPECTED_TIMELOCK_DELAY = 2 days;
 
     uint256 internal failCount;
@@ -87,9 +87,7 @@ contract Verify is Script {
         uint256 delay = tl.getMinDelay();
         _assert(
             delay == EXPECTED_TIMELOCK_DELAY,
-            string(abi.encodePacked(
-                "Timelock delay: expected ", _uint(EXPECTED_TIMELOCK_DELAY), " got ", _uint(delay)
-            ))
+            string(abi.encodePacked("Timelock delay: expected ", _uint(EXPECTED_TIMELOCK_DELAY), " got ", _uint(delay)))
         );
         console2.log("[OK] Timelock min delay = %d seconds (2 days)", delay);
     }
@@ -101,27 +99,21 @@ contract Verify is Script {
         uint256 vDelay = gov.votingDelay();
         _assert(
             vDelay == EXPECTED_VOTING_DELAY,
-            string(abi.encodePacked(
-                "votingDelay: expected ", _uint(EXPECTED_VOTING_DELAY), " got ", _uint(vDelay)
-            ))
+            string(abi.encodePacked("votingDelay: expected ", _uint(EXPECTED_VOTING_DELAY), " got ", _uint(vDelay)))
         );
         console2.log("[OK] Governor.votingDelay  = %d blocks", vDelay);
 
         uint256 vPeriod = gov.votingPeriod();
         _assert(
             vPeriod == EXPECTED_VOTING_PERIOD,
-            string(abi.encodePacked(
-                "votingPeriod: expected ", _uint(EXPECTED_VOTING_PERIOD), " got ", _uint(vPeriod)
-            ))
+            string(abi.encodePacked("votingPeriod: expected ", _uint(EXPECTED_VOTING_PERIOD), " got ", _uint(vPeriod)))
         );
         console2.log("[OK] Governor.votingPeriod = %d blocks", vPeriod);
 
         uint256 qFrac = gov.quorumNumerator();
         _assert(
             qFrac == EXPECTED_QUORUM_BPS,
-            string(abi.encodePacked(
-                "quorum: expected ", _uint(EXPECTED_QUORUM_BPS), "% got ", _uint(qFrac), "%"
-            ))
+            string(abi.encodePacked("quorum: expected ", _uint(EXPECTED_QUORUM_BPS), "% got ", _uint(qFrac), "%"))
         );
         console2.log("[OK] Governor.quorum       = %d%%", qFrac);
     }
@@ -130,10 +122,7 @@ contract Verify is Script {
     function _checkAethTokenRoles() internal {
         AethToken token = AethToken(AETH_TOKEN);
 
-        _assert(
-            token.hasRole(DEFAULT_ADMIN, AETHER_TIMELOCK),
-            "AethToken: Timelock does not hold DEFAULT_ADMIN_ROLE"
-        );
+        _assert(token.hasRole(DEFAULT_ADMIN, AETHER_TIMELOCK), "AethToken: Timelock does not hold DEFAULT_ADMIN_ROLE");
         console2.log("[OK] AethToken DEFAULT_ADMIN_ROLE -> Timelock");
 
         // Deployer must NOT hold DEFAULT_ADMIN anymore.
@@ -141,16 +130,10 @@ contract Verify is Script {
         // members — instead we verify the deployer key is absent by checking the
         // msg.sender of this script (the operator running verification).
         address operator = msg.sender;
-        _assert(
-            !token.hasRole(DEFAULT_ADMIN, operator),
-            "AethToken: script operator still holds DEFAULT_ADMIN_ROLE"
-        );
+        _assert(!token.hasRole(DEFAULT_ADMIN, operator), "AethToken: script operator still holds DEFAULT_ADMIN_ROLE");
         console2.log("[OK] AethToken DEFAULT_ADMIN_ROLE not held by operator");
 
-        _assert(
-            token.hasRole(MINTER_ROLE, GUILD_TREASURY),
-            "AethToken: GuildTreasury does not hold MINTER_ROLE"
-        );
+        _assert(token.hasRole(MINTER_ROLE, GUILD_TREASURY), "AethToken: GuildTreasury does not hold MINTER_ROLE");
         console2.log("[OK] AethToken MINTER_ROLE -> GuildTreasury");
     }
 
@@ -158,16 +141,10 @@ contract Verify is Script {
     function _checkHeroNFTRoles() internal {
         HeroNFT hero = HeroNFT(HERO_NFT);
 
-        _assert(
-            hero.hasRole(DEFAULT_ADMIN, AETHER_TIMELOCK),
-            "HeroNFT: Timelock does not hold DEFAULT_ADMIN_ROLE"
-        );
+        _assert(hero.hasRole(DEFAULT_ADMIN, AETHER_TIMELOCK), "HeroNFT: Timelock does not hold DEFAULT_ADMIN_ROLE");
         console2.log("[OK] HeroNFT DEFAULT_ADMIN_ROLE -> Timelock");
 
-        _assert(
-            hero.hasRole(UPGRADER_ROLE, AETHER_TIMELOCK),
-            "HeroNFT: Timelock does not hold UPGRADER_ROLE"
-        );
+        _assert(hero.hasRole(UPGRADER_ROLE, AETHER_TIMELOCK), "HeroNFT: Timelock does not hold UPGRADER_ROLE");
         console2.log("[OK] HeroNFT UPGRADER_ROLE -> Timelock");
     }
 
@@ -175,22 +152,13 @@ contract Verify is Script {
     function _checkTimelockGovernorLink() internal {
         AetherTimelock tl = AetherTimelock(payable(AETHER_TIMELOCK));
 
-        _assert(
-            tl.hasRole(PROPOSER_ROLE, AETHER_GOVERNOR),
-            "Timelock: Governor does not hold PROPOSER_ROLE"
-        );
+        _assert(tl.hasRole(PROPOSER_ROLE, AETHER_GOVERNOR), "Timelock: Governor does not hold PROPOSER_ROLE");
         console2.log("[OK] Timelock PROPOSER_ROLE -> Governor");
 
-        _assert(
-            tl.hasRole(CANCELLER_ROLE, AETHER_GOVERNOR),
-            "Timelock: Governor does not hold CANCELLER_ROLE"
-        );
+        _assert(tl.hasRole(CANCELLER_ROLE, AETHER_GOVERNOR), "Timelock: Governor does not hold CANCELLER_ROLE");
         console2.log("[OK] Timelock CANCELLER_ROLE -> Governor");
 
-        _assert(
-            tl.hasRole(EXECUTOR_ROLE, address(0)),
-            "Timelock: EXECUTOR_ROLE is not open (address(0) not granted)"
-        );
+        _assert(tl.hasRole(EXECUTOR_ROLE, address(0)), "Timelock: EXECUTOR_ROLE is not open (address(0) not granted)");
         console2.log("[OK] Timelock EXECUTOR_ROLE -> open (address(0))");
     }
 
@@ -199,10 +167,7 @@ contract Verify is Script {
         AetherTimelock tl = AetherTimelock(payable(AETHER_TIMELOCK));
         address operator = msg.sender;
 
-        _assert(
-            !tl.hasRole(DEFAULT_ADMIN, operator),
-            "Timelock: operator still holds DEFAULT_ADMIN_ROLE"
-        );
+        _assert(!tl.hasRole(DEFAULT_ADMIN, operator), "Timelock: operator still holds DEFAULT_ADMIN_ROLE");
         console2.log("[OK] Timelock DEFAULT_ADMIN_ROLE not held by operator");
     }
 
@@ -231,9 +196,16 @@ contract Verify is Script {
         if (v == 0) return "0";
         uint256 tmp = v;
         uint256 digits;
-        while (tmp != 0) { ++digits; tmp /= 10; }
+        while (tmp != 0) {
+            ++digits;
+            tmp /= 10;
+        }
         bytes memory buf = new bytes(digits);
-        while (v != 0) { --digits; buf[digits] = bytes1(uint8(48 + (v % 10))); v /= 10; }
+        while (v != 0) {
+            --digits;
+            buf[digits] = bytes1(uint8(48 + (v % 10)));
+            v /= 10;
+        }
         return string(buf);
     }
 }

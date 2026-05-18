@@ -108,15 +108,12 @@ contract PvPArenaTest is Test {
         // Also grant admin the minter role so setUp can mint test heroes.
         heroNFT.grantRole(heroNFT.MINTER_ROLE(), admin);
 
-        // Mint initial AETH supply to admin for distribution.
-        aeth.mint(admin, 10_000 ether);
-
-        // Fund players and give allowance to arena.
-        uint256 playerFunds = 100 ether;
-        aeth.transfer(player1, playerFunds);
-        aeth.transfer(player2, playerFunds);
-
         vm.stopPrank();
+
+        // Fund players with deal() — bypasses MINTER_ROLE requirement.
+        deal(address(aeth), player1, 100 ether);
+        deal(address(aeth), player2, 100 ether);
+        deal(address(aeth), attacker, 100 ether);
 
         vm.prank(player1);
         aeth.approve(address(arena), type(uint256).max);
@@ -196,9 +193,6 @@ contract PvPArenaTest is Test {
 
         vm.prank(attacker);
         aeth.approve(address(arena), type(uint256).max);
-        vm.deal(attacker, 10 ether);
-        vm.prank(admin);
-        aeth.transfer(attacker, 100 ether);
 
         vm.prank(attacker);
         vm.expectRevert(abi.encodeWithSelector(PvPArena.PvPArena__NotHeroOwner.selector, attacker, h1));

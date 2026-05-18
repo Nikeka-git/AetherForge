@@ -102,11 +102,13 @@ contract HeroNFTFactory is AccessControl {
      * @param baseURI     Token metadata base URI.
      * @return proxy      Address of the newly deployed ERC1967Proxy.
      */
-    function deployCreate2(bytes32 salt, address proxyAdmin, address upgrader, string calldata baseURI, address aethToken)
-        external
-        onlyRole(DEPLOYER_ROLE)
-        returns (address proxy)
-    {
+    function deployCreate2(
+        bytes32 salt,
+        address proxyAdmin,
+        address upgrader,
+        string calldata baseURI,
+        address aethToken
+    ) external onlyRole(DEPLOYER_ROLE) returns (address proxy) {
         if (proxyAdmin == address(0) || upgrader == address(0) || aethToken == address(0)) {
             revert HeroNFTFactory__ZeroAddress();
         }
@@ -126,11 +128,13 @@ contract HeroNFTFactory is AccessControl {
      * @notice Predict the CREATE2 proxy address for a given salt without deploying.
      * @dev    Uses the same initcode hash that deployCreate2 would produce.
      */
-    function predictCreate2Address(bytes32 salt, address proxyAdmin, address upgrader, string calldata baseURI, address aethToken)
-        external
-        view
-        returns (address predicted)
-    {
+    function predictCreate2Address(
+        bytes32 salt,
+        address proxyAdmin,
+        address upgrader,
+        string calldata baseURI,
+        address aethToken
+    ) external view returns (address predicted) {
         bytes memory initData = abi.encodeCall(HeroNFT.initialize, (proxyAdmin, upgrader, baseURI, aethToken));
         bytes memory creationCode =
             abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(implementation, initData));
